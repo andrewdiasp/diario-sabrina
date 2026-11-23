@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Diário da Sabrina</title>
+<title>Aurora Fitness</title>
+<script>if(location.hostname==='andrewdiasp.github.io')location.replace('https://aurorafitness.pages.dev/'+location.hash)</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Diário">
+<meta name="apple-mobile-web-app-title" content="Aurora Fitness">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
 <meta name="theme-color" content="#8db600">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -130,11 +132,13 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 .seg{display:inline-flex;flex:none;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:var(--card)}
 .seg button{min-height:40px;min-width:40px;border:0;border-radius:0;padding:0 8px;font-size:15px;font-weight:800;background:transparent;color:var(--ink)}
 .seg button.on{background:var(--ink);color:var(--card)}
+.marca{display:flex;align-items:center;gap:10px;margin:2px 0 10px}.marca img{width:40px;height:40px;border-radius:50%}.marca b{font:800 20px "Archivo Narrow",Archivo,sans-serif;color:var(--ink)}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){.bar i,.copo i{transition:none}}
 @media (max-width:380px){nav button{font-size:13px}.grid4{grid-template-columns:repeat(2,1fr)}}
 </style></head><body>
 <main>
+  <div class="marca"><img src="logo.png" alt=""><b>Aurora Fitness</b></div>
   <div class="banner" id="banner"></div>
   <div class="pessoa" id="pessoaBar"><label for="perfilSel">Diário de</label><select id="perfilSel"></select></div>
 
@@ -454,7 +458,7 @@ function estado(t){const e=document.getElementById('nvStatus');if(e)e.textConten
 function loginTela(){
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const d=document.createElement('div');d.id='nvLogin';
-  d.innerHTML=`<div><h2>Entrar no Diário</h2><p>Os dados ficam salvos na nuvem e aparecem em qualquer aparelho.</p>
+  d.innerHTML=`<div><img src="logo.png" alt="" style="width:132px;height:132px;justify-self:center"><h2 style="text-align:center">Aurora Fitness</h2><p style="text-align:center">Entre para ver seus dados em qualquer aparelho.</p>
   <label>E-mail<input id="nvEmail" type="email" autocomplete="email" inputmode="email"></label>
   <label>Senha (mínimo 6 caracteres)<input id="nvSenha" type="password" autocomplete="current-password"></label>
   <button class="pri" id="nvEntrar">Entrar</button>
