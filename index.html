@@ -454,19 +454,25 @@ function estado(t){const e=document.getElementById('nvStatus');if(e)e.textConten
 function loginTela(){
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const d=document.createElement('div');d.id='nvLogin';
-  d.innerHTML=`<div><h2>Entrar no Diário</h2><p>Os dados ficam salvos na nuvem e aparecem em qualquer aparelho. Digite seu e-mail para receber um código.</p>
+  d.innerHTML=`<div><h2>Entrar no Diário</h2><p>Os dados ficam salvos na nuvem e aparecem em qualquer aparelho.</p>
   <label>E-mail<input id="nvEmail" type="email" autocomplete="email" inputmode="email"></label>
-  <button class="pri" id="nvEnviar">Enviar código</button>
-  <div id="nvPasso2" hidden style="display:grid;gap:10px"><label>Código recebido por e-mail<input id="nvCod" inputmode="numeric" autocomplete="one-time-code"></label><button class="pri" id="nvEntrar">Entrar</button></div>
+  <label>Senha (mínimo 6 caracteres)<input id="nvSenha" type="password" autocomplete="current-password"></label>
+  <button class="pri" id="nvEntrar">Entrar</button>
+  <button id="nvCriar">Primeira vez? Criar conta</button>
   <p id="nvMsg"></p><button id="nvOff" style="background:none;border:0;text-decoration:underline">Usar sem internet por enquanto</button></div>`;
   document.body.appendChild(d);
   const msg=t=>d.querySelector('#nvMsg').textContent=t;
-  d.querySelector('#nvEnviar').onclick=async()=>{const email=d.querySelector('#nvEmail').value.trim();if(!email){msg('Digite o e-mail.');return}
-    msg('Enviando…');const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
-    if(error){msg('Não foi possível enviar: '+error.message);return}msg('Código enviado. Confira o e-mail (e o spam).');d.querySelector('#nvPasso2').hidden=false;d.querySelector('#nvCod').focus()};
-  d.querySelector('#nvEntrar').onclick=async()=>{const email=d.querySelector('#nvEmail').value.trim(),token=d.querySelector('#nvCod').value.trim();
-    msg('Entrando…');const {data,error}=await sb.auth.verifyOtp({email,token,type:'email'});
-    if(error){msg('Código inválido ou vencido. Peça outro.');return}d.remove();await entrar(data.user)};
+  const dados=()=>({email:d.querySelector('#nvEmail').value.trim(),password:d.querySelector('#nvSenha').value});
+  const traduz=m=>/invalid login/i.test(m)?'E-mail ou senha incorretos.':/already registered|already exists/i.test(m)?'Esse e-mail já tem conta. Use "Entrar".':/password/i.test(m)?'A senha precisa ter pelo menos 6 caracteres.':/not allowed|disabled/i.test(m)?'Criação de contas está desligada.':m;
+  d.querySelector('#nvEntrar').onclick=async()=>{const c=dados();if(!c.email||!c.password){msg('Preencha e-mail e senha.');return}
+    msg('Entrando…');const {data,error}=await sb.auth.signInWithPassword(c);
+    if(error){msg(traduz(error.message));return}d.remove();await entrar(data.user)};
+  d.querySelector('#nvCriar').onclick=async()=>{const c=dados();if(!c.email||c.password.length<6){msg('Digite o e-mail e uma senha com pelo menos 6 caracteres.');return}
+    msg('Criando a conta…');const {data,error}=await sb.auth.signUp(c);
+    if(error){msg(traduz(error.message));return}
+    if(!data.session){msg('Conta criada. Abra o e-mail de confirmação que chegou e depois volte aqui e toque em Entrar.');return}
+    d.remove();await entrar(data.user)};
+  d.querySelector('#nvSenha').addEventListener('keydown',e=>{if(e.key==='Enter')d.querySelector('#nvEntrar').click()});
   d.querySelector('#nvOff').onclick=()=>{d.remove();libera()};
 }
 async function puxar(primeira){
