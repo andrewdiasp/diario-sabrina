@@ -405,13 +405,14 @@ const subs=new Set();
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){alertBox()}};
 function alertBox(){const b=document.getElementById('banner');if(b){b.textContent='Não consegui salvar no aparelho (memória cheia?). Faça uma cópia de segurança.';b.style.display='block'}}
 const notify=()=>{for(const f of [...subs])setTimeout(f,0)};
+const hook=(p,op)=>{try{window.__nuvem&&window.__nuvem.escrita(p,op)}catch{}};
 const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
 const snap=p=>({id:p.split('/').pop(),exists:p in store,data:()=>clone(store[p]),metadata:{fromCache:false,hasPendingWrites:false}});
 const docRef=p=>({id:p.split('/').pop(),path:p,
   get:async()=>snap(p),
-  set:async d=>{store[p]=clone(d);persist();notify()},
-  update:async d=>{store[p]={...(store[p]||{}),...clone(d)};persist();notify()},
-  delete:async()=>{delete store[p];persist();notify()},
+  set:async d=>{store[p]=clone(d);persist();notify();hook(p,'set')},
+  update:async d=>{store[p]={...(store[p]||{}),...clone(d)};persist();notify();hook(p,'set')},
+  delete:async()=>{delete store[p];persist();notify();hook(p,'del')},
   onSnapshot(n){const f=()=>n(snap(p));subs.add(f);setTimeout(f,0);return()=>subs.delete(f)},
   collection:c=>coll(p+'/'+c)});
 const coll=(c,ord,lim,wh=[])=>({path:c,
@@ -425,9 +426,110 @@ const coll=(c,ord,lim,wh=[])=>({path:c,
   onSnapshot(n){const f=()=>n(this._q());subs.add(f);setTimeout(f,0);return()=>subs.delete(f)}});
 const db={doc:docRef,collection:c=>coll(c)};
 window.STANDALONE={exportar:()=>JSON.stringify({app:'diario-alimentar',versao:1,data:new Date().toISOString(),store},null,1),
-  importar:t=>{const j=JSON.parse(t);if(!j||!j.store||typeof j.store!=='object')throw 0;store={...store,...j.store};persist();return Object.keys(j.store).length}};
-window.claude={use:async n=>n==='db'?db:null};
+  importar:t=>{const j=JSON.parse(t);if(!j||!j.store||typeof j.store!=='object')throw 0;store={...store,...j.store};persist();Object.keys(j.store).forEach(k=>hook(k,'set'));return Object.keys(j.store).length}};
+window.__local={get:()=>store,put:(p,d)=>{store[p]=d},del:p=>{delete store[p]},salvar:()=>{persist();notify()}};
+window.claude={use:async n=>{if(window.__pronto)await window.__pronto;return n==='db'?db:n==='sample'?(window.__sample||null):null}};
 })();
+</script>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js"></script>
+<script>
+/* Sincronização com a nuvem (Supabase) e IA (Cloudflare Worker -> Claude).
+   Sem config.js preenchido, o app continua funcionando só no aparelho. */
+(()=>{
+const CFG=window.DIARIO_CFG||{};
+if(!CFG.supabaseUrl||!CFG.supabaseAnon)return;
+window.STANDALONE.nuvem=true;
+const L=window.__local,PEND='diario-pendentes',SYNC='diario-sincronizado';
+let pend={};try{pend=JSON.parse(localStorage.getItem(PEND)||'{}')}catch{}
+const salvaPend=()=>{try{localStorage.setItem(PEND,JSON.stringify(pend))}catch{}};
+let sb=null,usuario=null,timer=null,enviando=false;
+let libera;window.__pronto=new Promise(r=>libera=r);
+const css=`#nvLogin{position:fixed;inset:0;z-index:50;background:var(--bg,#f3f6ea);display:flex;align-items:center;justify-content:center;padding:20px}
+#nvLogin>div{width:100%;max-width:380px;background:var(--card,#fff);border-radius:16px;padding:22px;display:grid;gap:10px}
+#nvLogin h2{margin:0}#nvLogin p{margin:0;color:var(--mut,#555);font-size:14px}
+#nvStatus{font-size:13px;color:var(--mut,#555)}`;
+
+function estado(t){const e=document.getElementById('nvStatus');if(e)e.textContent=t}
+function loginTela(){
+  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
+  const d=document.createElement('div');d.id='nvLogin';
+  d.innerHTML=`<div><h2>Entrar no Diário</h2><p>Os dados ficam salvos na nuvem e aparecem em qualquer aparelho. Digite seu e-mail para receber um código.</p>
+  <label>E-mail<input id="nvEmail" type="email" autocomplete="email" inputmode="email"></label>
+  <button class="pri" id="nvEnviar">Enviar código</button>
+  <div id="nvPasso2" hidden style="display:grid;gap:10px"><label>Código recebido por e-mail<input id="nvCod" inputmode="numeric" autocomplete="one-time-code"></label><button class="pri" id="nvEntrar">Entrar</button></div>
+  <p id="nvMsg"></p><button id="nvOff" style="background:none;border:0;text-decoration:underline">Usar sem internet por enquanto</button></div>`;
+  document.body.appendChild(d);
+  const msg=t=>d.querySelector('#nvMsg').textContent=t;
+  d.querySelector('#nvEnviar').onclick=async()=>{const email=d.querySelector('#nvEmail').value.trim();if(!email){msg('Digite o e-mail.');return}
+    msg('Enviando…');const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
+    if(error){msg('Não foi possível enviar: '+error.message);return}msg('Código enviado. Confira o e-mail (e o spam).');d.querySelector('#nvPasso2').hidden=false;d.querySelector('#nvCod').focus()};
+  d.querySelector('#nvEntrar').onclick=async()=>{const email=d.querySelector('#nvEmail').value.trim(),token=d.querySelector('#nvCod').value.trim();
+    msg('Entrando…');const {data,error}=await sb.auth.verifyOtp({email,token,type:'email'});
+    if(error){msg('Código inválido ou vencido. Peça outro.');return}d.remove();await entrar(data.user)};
+  d.querySelector('#nvOff').onclick=()=>{d.remove();libera()};
+}
+async function puxar(primeira){
+  const linhas=[];for(let de=0;;de+=1000){const {data,error}=await sb.from('docs').select('path,data').range(de,de+999);if(error)throw error;linhas.push(...data);if(data.length<1000)break}
+  const nuvem=new Map(linhas.map(r=>[r.path,r.data])),loc=L.get(),jaSync=localStorage.getItem(SYNC)===usuario.id;
+  for(const [p,d] of nuvem)if(!pend[p])L.put(p,d);
+  for(const p of Object.keys(loc))if(!nuvem.has(p)&&!pend[p]){if(jaSync)L.del(p);else pend[p]='set'}
+  salvaPend();L.salvar();try{localStorage.setItem(SYNC,usuario.id)}catch{}
+}
+async function enviar(){
+  if(!sb||!usuario||enviando||!navigator.onLine)return;enviando=true;
+  try{const loc=L.get(),ps=Object.keys(pend),sets=ps.filter(p=>pend[p]==='set'&&loc[p]!==undefined),dels=ps.filter(p=>pend[p]==='del'||loc[p]===undefined);
+    for(let i=0;i<sets.length;i+=200){const lote=sets.slice(i,i+200);const {error}=await sb.from('docs').upsert(lote.map(p=>({path:p,data:loc[p],updated_at:new Date().toISOString()})),{onConflict:'user_id,path'});if(error)throw error;lote.forEach(p=>{if(pend[p]==='set')delete pend[p]})}
+    for(let i=0;i<dels.length;i+=200){const lote=dels.slice(i,i+200);const {error}=await sb.from('docs').delete().in('path',lote);if(error)throw error;lote.forEach(p=>delete pend[p])}
+    salvaPend();estado('Sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){estado('Sem conexão com a nuvem — salvo no aparelho, envio depois.')}finally{enviando=false;if(Object.keys(pend).length&&!timer)timer=setTimeout(()=>{timer=null;enviar()},30000)}
+}
+window.__nuvem={escrita:(p,op)=>{pend[p]=op;salvaPend();clearTimeout(timer);timer=setTimeout(()=>{timer=null;enviar()},800)}};
+
+/* IA pelo Worker */
+async function b64(b){const u=new Uint8Array(await b.arrayBuffer());let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
+async function chamar(content,tier){
+  const {data:{session}}=await sb.auth.getSession();if(!session)throw{code:'sem_login'};
+  const r=await fetch(CFG.aiUrl,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+session.access_token},body:JSON.stringify({tier,messages:[{role:'user',content}]})});
+  if(r.status===429)throw{code:'rate_limited'};const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:'ia_'+r.status,message:j.erro||''};return j.text||'';
+}
+function montaSample(){
+  const ok=['image/jpeg','image/png','image/webp','image/gif'];
+  const sample=async(input,opts={})=>{const content=[];for(const b of opts.images||[])content.push({type:'image',source:{type:'base64',media_type:ok.includes(b.type)?b.type:'image/jpeg',data:await b64(b)}});
+    content.push({type:'text',text:typeof input==='string'?input:input.map(m=>m.content).join('\n\n')});
+    const text=await chamar(content,opts.modelTier||'default');opts.onText&&opts.onText({text,delta:text});return{text,truncated:false}};
+  sample.json=async(input,opts={})=>{const r=await sample(input+'\n\nResponda apenas com o JSON, sem texto antes ou depois e sem crases.',opts);const t=r.text,i=t.indexOf('{'),j=t.lastIndexOf('}');if(i<0)throw{code:'resposta_invalida'};return JSON.parse(t.slice(i,j+1))};
+  sample.limits=async()=>({images:true});
+  return sample;
+}
+async function entrar(user){
+  usuario=user;if(CFG.aiUrl){window.__sample=montaSample();window.STANDALONE.ia=true}
+  try{await puxar();await enviar()}catch(e){estado('Sem conexão com a nuvem agora; usando os dados do aparelho.')}
+  libera();
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')puxar().then(enviar).catch(()=>{})});
+  window.addEventListener('online',()=>enviar());
+  setInterval(()=>{if(document.visibilityState==='visible')puxar().then(enviar).catch(()=>{})},120000);
+}
+function painelConta(){
+  const card=document.getElementById('bkCard');if(!card)return;
+  const n=card.querySelector('.note');if(n)n.textContent='Os dados ficam salvos na nuvem e também neste aparelho (funciona sem internet e envia depois). A cópia em arquivo é uma segurança a mais.';
+  const p=document.createElement('div');p.innerHTML=`<p class="note" style="margin:0">Conectado como <b id="nvQuem">—</b>. <span id="nvStatus"></span></p><div class="btns"><button id="nvSync">Sincronizar agora</button><button id="nvSair">Sair</button></div>`;
+  card.appendChild(p);
+  p.querySelector('#nvSync').onclick=()=>puxar().then(enviar).then(()=>location.reload()).catch(()=>estado('Sem conexão agora.'));
+  p.querySelector('#nvSair').onclick=async()=>{await enviar();await sb.auth.signOut();try{localStorage.removeItem(SYNC)}catch{}location.reload()};
+  const q=document.getElementById('nvQuem');if(q&&usuario)q.textContent=usuario.email;
+}
+(async()=>{
+  if(!window.supabase||!window.supabase.createClient){libera();return}  /* sem internet na abertura: segue local */
+  sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnon,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'diario-auth'}});
+  const {data:{session}}=await sb.auth.getSession();
+  const pronto=()=>document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r)):Promise.resolve();
+  await pronto();
+  if(session&&session.user)await entrar(session.user);else loginTela();
+  await window.__pronto;painelConta();
+})();
+})();
+
 </script>
 <script>
 {
@@ -1153,10 +1255,7 @@ $('#novoPerfil').onclick=async()=>{const n=$('#novoNome').value.trim();if(!n){to
 /* ================= versão independente (fora do Claude) ================= */
 if(window.STANDALONE){
   $('#pessoaCard').hidden=true;$('#bkCard').hidden=false;$('#bcBox').hidden=false;
-  $('#fotoNome').closest('label').hidden=true;$('#fotoBtn').closest('.btns').hidden=true;
-  $('#fotoBtn').closest('.card').querySelector('h2').textContent='Novo produto';
-  $('#fotoBtn').closest('.card').querySelector('.note').textContent='Busque pelo código de barras ou cadastre copiando a tabela do rótulo.';
-  $('#novoProd2').onclick=()=>abrirForm(null);
+  $('#novoProd2').hidden=true;
   $('#bcBtn').onclick=async()=>{
     const c=$('#bcCod').value.replace(/\D/g,'');if(c.length<8){toast('Digite o código completo');return}
     $('#bcBtn').disabled=true;$('#fotoSt').textContent='Buscando…';
@@ -1192,7 +1291,8 @@ function trocarDia(d){
   render();renderProdutos();preencherCfg();
   [db,sample]=await Promise.all([claude.use('db'),claude.use('sample')]);
   if(sample){try{const lim=await sample.limits();if(!lim.images){$('#fotoBtn').hidden=true;$('#mUpCard').hidden=true;$('#dUpBtn').hidden=true;$('#dietaCard').querySelector('.note').hidden=true}}catch{}$('#anaBtn').hidden=false}
-  else{$('#fotoBtn').hidden=true;$('#mUpCard').hidden=true;$('#dUpBtn').hidden=true;$('#dietaCard').querySelector('.note').hidden=true;$('#impCard').hidden=true}
+  else{$('#fotoBtn').hidden=true;$('#mUpCard').hidden=true;$('#dUpBtn').hidden=true;$('#dietaCard').querySelector('.note').hidden=true;$('#impCard').hidden=true;
+    if(window.STANDALONE){$('#fotoNome').closest('label').hidden=true;const c=$('#fotoBtn').closest('.card');c.querySelector('h2').textContent='Novo produto';c.querySelector('.note').textContent='Busque pelo código de barras ou cadastre copiando a tabela do rótulo.'}}
   if(!db){banner('Abra este app logado no claude.ai para salvar os dados. Sem isso, nada fica gravado.');return}
   db.collection('perfis').onSnapshot(s=>{perfis=s.docs.map(x=>({id:x.id,nome:x.data().nome||x.id}));if(perfis.length&&!perfis.some(x=>x.id===perfil))trocarPerfil(perfis[0].id);renderPerfis()},()=>{});
   db.collection('produtos').onSnapshot(s=>{produtos=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.nome).localeCompare(b.nome,'pt-BR'));renderProdutos();renderDieta();renderRP();if($('#sheet').classList.contains('on'))renderSheet()},()=>{});
