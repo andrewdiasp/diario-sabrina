@@ -351,7 +351,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
     <div class="card" id="bkCard" style="display:grid;gap:10px" hidden>
       <h2>Cópia de segurança</h2>
       <p class="note">Os dados ficam só neste aparelho. Baixe uma cópia de vez em quando (ex.: toda semana) e guarde no app Arquivos ou no iCloud.</p>
-      <div class="btns"><button id="bkSave">Baixar cópia</button><button id="bkLoad">Restaurar cópia</button></div>
+      <div class="btns"><button id="bkSave">Baixar cópia</button><button id="bkLoad">Importar arquivo / restaurar cópia</button></div><p class="note">Importar junta os dados do arquivo com os que já estão aqui (o que tiver a mesma data é atualizado; nada é apagado).</p>
       <input type="file" id="bkFile" accept="application/json,.json" hidden>
     </div>
     <div class="card" id="pessoaCard" style="display:grid;gap:10px">
@@ -425,7 +425,7 @@ const coll=(c,ord,lim,wh=[])=>({path:c,
   onSnapshot(n){const f=()=>n(this._q());subs.add(f);setTimeout(f,0);return()=>subs.delete(f)}});
 const db={doc:docRef,collection:c=>coll(c)};
 window.STANDALONE={exportar:()=>JSON.stringify({app:'diario-alimentar',versao:1,data:new Date().toISOString(),store},null,1),
-  importar:t=>{const j=JSON.parse(t);if(!j||!j.store||typeof j.store!=='object')throw 0;store=j.store;persist()}};
+  importar:t=>{const j=JSON.parse(t);if(!j||!j.store||typeof j.store!=='object')throw 0;store={...store,...j.store};persist();return Object.keys(j.store).length}};
 window.claude={use:async n=>n==='db'?db:null};
 })();
 </script>
@@ -1111,6 +1111,7 @@ $('#dPrev').addEventListener('click',async e=>{
   dietaLida=null;$('#dPrev').innerHTML='';renderDieta();render();renderProdutos();toast('Plano importado: '+refeicoes.length+' refeições prontas');
 });
 function renderDieta(){
+  if(!sample)$('#dietaCard').hidden=!dieta;
   if(!dieta){$('#dAtual').innerHTML='';return}
   $('#dAtual').innerHTML=`<div class="prev"><b>Plano atual: ${esc(dieta.nome)}</b> <span class="mut">(${dBR(dieta.data)})</span>
     <p class="note">${dieta.kcal_plano?'Indicado: '+fmt(dieta.kcal_plano)+' kcal · ':''}estimado pelas porções: ${fmt(dieta.kcal_estimado)} kcal${dieta.agua_ml?' · água '+fmt(dieta.agua_ml)+' ml':''}</p>
@@ -1173,7 +1174,7 @@ if(window.STANDALONE){
     a.href=URL.createObjectURL(blob);a.download='diario-backup-'+hojeISO()+'.json';document.body.appendChild(a);a.click();a.remove();toast('Cópia gerada')};
   $('#bkLoad').onclick=()=>$('#bkFile').click();
   $('#bkFile').addEventListener('change',async()=>{const f=$('#bkFile').files[0];if(!f)return;
-    try{window.STANDALONE.importar(await f.text());toast('Cópia restaurada');setTimeout(()=>location.reload(),600)}catch{toast('Arquivo inválido')}});
+    try{const n=window.STANDALONE.importar(await f.text());toast((n||'')+' registros importados');setTimeout(()=>location.reload(),900)}catch{toast('Arquivo inválido')}});
 }
 
 /* ================= dados ================= */
@@ -1190,8 +1191,8 @@ function trocarDia(d){
 (async()=>{
   render();renderProdutos();preencherCfg();
   [db,sample]=await Promise.all([claude.use('db'),claude.use('sample')]);
-  if(sample){try{const lim=await sample.limits();if(!lim.images){$('#fotoBtn').hidden=true;$('#mUpCard').hidden=true;$('#dietaCard').hidden=true}}catch{}$('#anaBtn').hidden=false}
-  else{$('#fotoBtn').hidden=true;$('#mUpCard').hidden=true;$('#dietaCard').hidden=true;$('#impCard').hidden=true}
+  if(sample){try{const lim=await sample.limits();if(!lim.images){$('#fotoBtn').hidden=true;$('#mUpCard').hidden=true;$('#dUpBtn').hidden=true;$('#dietaCard').querySelector('.note').hidden=true}}catch{}$('#anaBtn').hidden=false}
+  else{$('#fotoBtn').hidden=true;$('#mUpCard').hidden=true;$('#dUpBtn').hidden=true;$('#dietaCard').querySelector('.note').hidden=true;$('#impCard').hidden=true}
   if(!db){banner('Abra este app logado no claude.ai para salvar os dados. Sem isso, nada fica gravado.');return}
   db.collection('perfis').onSnapshot(s=>{perfis=s.docs.map(x=>({id:x.id,nome:x.data().nome||x.id}));if(perfis.length&&!perfis.some(x=>x.id===perfil))trocarPerfil(perfis[0].id);renderPerfis()},()=>{});
   db.collection('produtos').onSnapshot(s=>{produtos=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.nome).localeCompare(b.nome,'pt-BR'));renderProdutos();renderDieta();renderRP();if($('#sheet').classList.contains('on'))renderSheet()},()=>{});
