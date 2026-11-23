@@ -2,5 +2,5 @@
 window.DIARIO_CFG={
   supabaseUrl:'https://kjczgyqniwakbookndlu.supabase.co',
   supabaseAnon:'sb_publishable_CJwwC_M3AK7BEvrNFIcHpw_JV-sSKTf',
-  aiUrl:''             // preencher com o endereço do Worker (passo C)
+  aiUrl:'https://diario-ia.andrewdiaspucheta.workers.dev'
 };
