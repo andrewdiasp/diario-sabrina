@@ -2,7 +2,6 @@
 <html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aurora Fitness</title>
-<script>if(location.hostname==='andrewdiasp.github.io')location.replace('https://aurorafitness.pages.dev/'+location.hash)</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -491,10 +490,22 @@ async function enviar(){
   try{const loc=L.get(),ps=Object.keys(pend),sets=ps.filter(p=>pend[p]==='set'&&loc[p]!==undefined),dels=ps.filter(p=>pend[p]==='del'||loc[p]===undefined);
     for(let i=0;i<sets.length;i+=200){const lote=sets.slice(i,i+200);const {error}=await sb.from('docs').upsert(lote.map(p=>({path:p,data:loc[p],updated_at:new Date().toISOString()})),{onConflict:'user_id,path'});if(error)throw error;lote.forEach(p=>{if(pend[p]==='set')delete pend[p]})}
     for(let i=0;i<dels.length;i+=200){const lote=dels.slice(i,i+200);const {error}=await sb.from('docs').delete().in('path',lote);if(error)throw error;lote.forEach(p=>delete pend[p])}
-    salvaPend();estado('Sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+    salvaPend();estado('Sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));if(!Object.keys(pend).length)avisoMudanca();
   }catch(e){const perm=e&&(e.code==='42501'||/permission|row-level/i.test(e.message||''));estado(perm?'Erro de permissão no banco da nuvem — os dados estão só neste aparelho.':'Sem conexão com a nuvem — salvo no aparelho, envio depois.');if(perm){const b=document.getElementById('banner');if(b){b.textContent='Os dados não estão subindo para a nuvem (permissão do banco). Ficam salvos só neste aparelho até corrigir.';b.style.display='block'}}}finally{enviando=false;if(Object.keys(pend).length&&!timer)timer=setTimeout(()=>{timer=null;enviar()},30000)}
 }
 window.__nuvem={escrita:(p,op)=>{pend[p]=op;salvaPend();clearTimeout(timer);timer=setTimeout(()=>{timer=null;enviar()},800)}};
+
+/* endereço antigo: depois de enviar tudo, mostra o caminho para o novo */
+const NOVO='https://aurorafitness.pages.dev/';
+function avisoMudanca(){
+  if(location.hostname!=='andrewdiasp.github.io'||document.getElementById('nvMuda'))return;
+  const n=Object.keys(L.get()).length,d=document.createElement('div');d.id='nvMuda';
+  d.setAttribute('style','position:fixed;left:12px;right:12px;top:12px;z-index:60;background:#172200;color:#fff;border-radius:14px;padding:14px;display:grid;gap:8px;box-shadow:0 8px 24px #0005');
+  d.innerHTML=`<b>O app mudou de endereço</b><span style="font-size:14px">${n} registros deste aparelho já estão salvos na nuvem. Abra o novo endereço, entre com o mesmo e-mail e senha e adicione à tela de início.</span><a href="${NOVO}" style="background:#8db600;color:#172200;font-weight:800;text-align:center;padding:12px;border-radius:10px;text-decoration:none">Abrir aurorafitness.pages.dev</a>`;
+  document.body.appendChild(d);
+}
+/* força o envio de tudo o que está neste aparelho */
+async function enviarTudo(){Object.keys(L.get()).forEach(p=>{if(!pend[p])pend[p]='set'});salvaPend();await enviar()}
 
 /* IA pelo Worker */
 async function b64(b){const u=new Uint8Array(await b.arrayBuffer());let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
@@ -523,9 +534,10 @@ async function entrar(user){
 function painelConta(){
   const card=document.getElementById('bkCard');if(!card)return;
   const n=card.querySelector('.note');if(n)n.textContent='Os dados ficam salvos na nuvem e também neste aparelho (funciona sem internet e envia depois). A cópia em arquivo é uma segurança a mais.';
-  const p=document.createElement('div');p.innerHTML=`<p class="note" style="margin:0">Conectado como <b id="nvQuem">—</b>. <span id="nvStatus"></span></p><div class="btns"><button id="nvSync">Sincronizar agora</button><button id="nvSair">Sair</button></div>`;
+  const p=document.createElement('div');p.innerHTML=`<p class="note" style="margin:0">Conectado como <b id="nvQuem">—</b>. <span id="nvStatus"></span></p><div class="btns"><button id="nvSync">Sincronizar agora</button><button id="nvTudo">Enviar tudo deste aparelho</button><button id="nvSair">Sair</button></div>`;
   card.appendChild(p);
   p.querySelector('#nvSync').onclick=()=>puxar().then(enviar).then(()=>location.reload()).catch(()=>estado('Sem conexão agora.'));
+  p.querySelector('#nvTudo').onclick=async()=>{estado('Enviando…');await enviarTudo()};
   p.querySelector('#nvSair').onclick=async()=>{await enviar();await sb.auth.signOut();try{localStorage.removeItem(SYNC)}catch{}location.reload()};
   const q=document.getElementById('nvQuem');if(q&&usuario)q.textContent=usuario.email;
 }
