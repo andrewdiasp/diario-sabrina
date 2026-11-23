@@ -536,7 +536,7 @@ function painelConta(){
   const n=card.querySelector('.note');if(n)n.textContent='Os dados ficam salvos na nuvem e também neste aparelho (funciona sem internet e envia depois). A cópia em arquivo é uma segurança a mais.';
   const p=document.createElement('div');p.innerHTML=`<p class="note" style="margin:0">Conectado como <b id="nvQuem">—</b>. <span id="nvStatus"></span></p><div class="btns"><button id="nvSync">Sincronizar agora</button><button id="nvTudo">Enviar tudo deste aparelho</button><button id="nvSair">Sair</button></div>`;
   card.appendChild(p);
-  p.querySelector('#nvSync').onclick=()=>puxar().then(enviar).then(()=>location.reload()).catch(()=>estado('Sem conexão agora.'));
+  p.querySelector('#nvSync').onclick=async()=>{const b=p.querySelector('#nvSync');b.disabled=true;estado('Sincronizando…');try{await puxar();await enviar()}catch(e){estado('Sem conexão agora.')}finally{b.disabled=false}};
   p.querySelector('#nvTudo').onclick=async()=>{estado('Enviando…');await enviarTudo()};
   p.querySelector('#nvSair').onclick=async()=>{await enviar();await sb.auth.signOut();try{localStorage.removeItem(SYNC)}catch{}location.reload()};
   const q=document.getElementById('nvQuem');if(q&&usuario)q.textContent=usuario.email;
