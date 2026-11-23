@@ -215,7 +215,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
         <label>Começar de um modelo<select id="tModelo"></select></label>
         <div id="exList"></div>
         <div id="blList"></div>
-        <div class="btns"><button id="exAddF">+ Exercício de força</button><button id="exAddC">+ Cardio</button><button id="blAdd">+ Bloco (vários exercícios)</button><button id="aulaBtn">+ Aula HYROX em estações</button><button id="exHyrox">+ Simulado HYROX</button></div>
+        <button class="pri" id="addMenuBtn" style="width:100%;margin-top:8px">+ Adicionar ao treino</button>
+        <div class="btns" hidden><button id="exAddF">+ Exercício de força</button><button id="exAddC">+ Cardio</button><button id="blAdd">+ Bloco (vários exercícios)</button><button id="aulaBtn">+ Aula HYROX em estações</button><button id="exHyrox">+ Simulado HYROX</button></div>
         <div id="aulaBox" class="prev" hidden>
           <b>Montar aula em estações</b>
           <div class="grid4" style="margin-top:6px"><label>Estações<input id="aEst" type="number" inputmode="numeric" value="3"></label><label>Min. cada<input id="aMin" type="number" inputmode="decimal" value="6"></label><label>Descanso (s)<input id="aDesc" type="number" inputmode="numeric" value="0"></label><label>Rounds do circuito<input id="aRounds" type="number" inputmode="numeric" value="2"></label></div>
@@ -381,6 +382,12 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
   <h3 style="margin-top:16px">Lançar avulso</h3>
   <div class="grid2" style="margin-top:6px"><label>O que comeu<input id="avNome" placeholder="Ex.: pastel de feira"></label><label>kcal<input id="avK" type="number" inputmode="numeric"></label></div>
   <div class="btns"><button id="avAdd">Adicionar avulso</button></div>
+</div></div>
+<div class="sheet" id="addSheet" role="dialog" aria-modal="true" aria-labelledby="addTit"><div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 id="addTit">Adicionar ao treino</h2><button id="addClose">Fechar</button></div>
+  <div style="display:flex;gap:8px;margin-top:10px"><input id="addBusca" placeholder="Buscar" aria-label="Buscar" autocomplete="off" style="flex:1"><button class="pri" id="espNovoBtn" style="white-space:nowrap;flex:none">+ Esporte</button></div>
+  <div id="espCriar"></div>
+  <div class="lista" id="addLista"></div>
 </div></div>
 <div class="sheet" id="exSheet" role="dialog" aria-modal="true" aria-labelledby="exShTit"><div>
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 id="exShTit">Escolher exercício</h2><button id="exShClose">Fechar</button></div>
@@ -570,6 +577,8 @@ const mmss2seg=t=>{t=String(t||'').trim();if(!t)return 0;const p=t.split(':').ma
 const REFS=[['cafe','Café da manhã'],['almoco','Almoço'],['lanche','Lanche da tarde'],['jantar','Jantar']];
 const DEF_CFG={nome:'',contexto:'',meta_kcal:0,meta_agua:3000,meta_peso:0,horarios:{cafe:'07:00',almoco:'12:00',lanche:'17:00',jantar:'20:00'}};
 const TIPOS=['Musculação','HYROX','Futevôlei','Corrida','Bike','Funcional','Outro'];
+const ESPORTES=['Futevôlei','Beach tennis','Vôlei de praia','Futebol','Corrida','Caminhada','Bike','Spinning','Natação','CrossFit','Funcional','Yoga','Pilates','Muay thai','Jiu-jitsu','Boxe','Tênis','Padel','Dança','Alongamento'];
+let espCustom=[];
 const HYROX=[['Corrida',1000],['SkiErg',1000],['Corrida',1000],['Sled push',50],['Corrida',1000],['Sled pull',50],['Corrida',1000],['Burpee broad jump',80],['Corrida',1000],['Remo',1000],['Corrida',1000],['Farmers carry',200],['Corrida',1000],['Sandbag lunges',100],['Corrida',1000],['Wall balls (reps)',100]];
 const EX_SUG=['Supino reto','Supino inclinado','Crucifixo','Agachamento livre','Leg press','Cadeira extensora','Mesa flexora','Levantamento terra','Stiff','Afundo','Panturrilha','Remada curvada','Remada baixa','Puxada frontal','Barra fixa','Desenvolvimento','Elevação lateral','Rosca direta','Rosca martelo','Tríceps corda','Tríceps testa','Abdominal','Prancha','Wall sit','Spanish squat','Step-down','Ponte de glúteo','Abdução com elástico',...new Set(HYROX.map(h=>h[0])),'Bike','Air bike','Kettlebell swing','Thruster'];
 const MED=[['peso','Peso','kg',1],['gordura','% gordura','%',1],['magra','Massa magra','kg',1],['cintura','Cintura','cm',1],['abdomen','Abdômen','cm',1],['quadril','Quadril','cm',1],['peito','Peito','cm',1],['braco','Braço','cm',1],['coxa','Coxa','cm',1]];
@@ -759,7 +768,7 @@ $('#avAdd').onclick=()=>{const n=$('#avNome').value.trim(),k=num($('#avK').value
   day.itens.push(itemDe({nome:n,kcal:k,porcao:'avulso'},1,$('#shRef').value));$('#avNome').value=$('#avK').value='';salvarDia();fecharSheet()};
 $('#busca').addEventListener('input',renderSheet);
 $('#shClose').onclick=fecharSheet;$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')fecharSheet()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharSheet();fecharExPicker();$('#calSheet').classList.remove('on')}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharSheet();fecharExPicker();fecharAdd();$('#calSheet').classList.remove('on')}});
 $('#nrAdd').onclick=()=>{const n=$('#nrNome').value.trim();if(!n){toast('Dê um nome para a refeição');return}
   const k='r-'+novoId();(day.refs=day.refs||[]).push({k,nome:n,hora:$('#nrHora').value||agoraHM()});$('#nrNome').value=$('#nrHora').value='';salvarDia();abrirSheet(k)};
 $('#irTreino').onclick=()=>{novoTreino(dia);irPara('treino')};
@@ -803,13 +812,37 @@ Escreva em português do Brasil, no máximo 6 linhas, sem títulos: como ficou f
 };
 
 /* ================= TREINO ================= */
-$('#tTipo').innerHTML=TIPOS.map(t=>`<option>${t}</option>`).join('');
+function renderTipos(){const v=$('#tTipo').value||(tr&&tr.tipo);const l=[...new Set([...TIPOS.filter(t=>t!=='Outro'),...ESPORTES,...espCustom,'Outro'])];$('#tTipo').innerHTML=l.map(t=>`<option>${esc(t)}</option>`).join('');if(v){if(!l.includes(v))$('#tTipo').insertAdjacentHTML('afterbegin',`<option>${esc(v)}</option>`);$('#tTipo').value=v}}
+renderTipos();
+/* menu "Adicionar ao treino": coluna com rolagem */
+const ADD_OPC=[['forca','Exercício de força','séries com repetições e carga'],['bloco','Bloco com vários exercícios','circuito, AMRAP, EMOM, for time'],['aula','Aula em estações','HYROX, funcional ou CrossFit por estações'],['simulado','Simulado HYROX oficial','8 corridas + 8 estações'],['cardio','Cardio livre','distância, tempo e carga']];
+function abrirAdd(){$('#addBusca').value='';$('#espCriar').innerHTML='';renderAdd();$('#addSheet').classList.add('on');$('#addLista').scrollTop=0}
+function fecharAdd(){$('#addSheet').classList.remove('on')}
+function renderAdd(){
+  const q=norm($('#addBusca').value),m=t=>!q||norm(t).includes(q);
+  const op=ADD_OPC.filter(o=>m(o[1])||m(o[2])),es=[...new Set([...espCustom,...ESPORTES])].filter(m);
+  $('#addLista').innerHTML=(op.length?'<h3>Musculação e blocos</h3>'+op.map(o=>`<div class="op"><button data-addop="${o[0]}">${esc(o[1])} <small>· ${esc(o[2])}</small></button></div>`).join(''):'')
+    +(es.length?'<h3>Esportes</h3>'+es.map(e=>`<div class="op"><button data-addesp="${esc(e)}">${esc(e)}</button>${espCustom.includes(e)?`<button class="sm" data-esprm="${esc(e)}" aria-label="Apagar esporte">×</button>`:''}</div>`).join(''):'')
+    +(!op.length&&!es.length?'<div class="empty">Nada com esse nome. Use "+ Esporte" para criar.</div>':'');
+}
+function addEsporte(nome){
+  if(!tr.exs.length&&!(tr.blocos||[]).length){tr.tipo=nome;renderTipos();$('#tTipo').value=nome;if(!$('#tNome').value)$('#tNome').value=tr.nome=''}
+  tr.exs.push({nome,tipo:'cardio',dist:'',tempo:'',kg:''});renderEx();fecharAdd();toast(nome+' adicionado — preencha tempo, distância ou o que fizer sentido')}
+$('#addMenuBtn').onclick=abrirAdd;$('#addClose').onclick=fecharAdd;$('#addSheet').addEventListener('click',e=>{if(e.target.id==='addSheet')fecharAdd()});
+$('#addBusca').addEventListener('input',()=>{$('#espCriar').innerHTML='';renderAdd()});
+$('#espNovoBtn').onclick=()=>{$('#espCriar').innerHTML=`<div class="prev" style="margin-top:10px"><b>Novo esporte</b><div class="grid2" style="grid-template-columns:1fr auto;align-items:end;margin-top:6px"><label>Nome<input id="espNome" placeholder="Ex.: Remo havaiano" value="${esc($('#addBusca').value)}"></label><button class="pri" id="espCriarOk">Criar</button></div></div>`;$('#espNome').focus()};
+$('#addSheet').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const D=b.dataset;
+  if(D.addop){fecharAdd();({forca:()=>$('#exAddF').click(),cardio:()=>$('#exAddC').click(),bloco:()=>$('#blAdd').click(),aula:()=>$('#aulaBtn').click(),simulado:()=>$('#exHyrox').click()})[D.addop]();return}
+  if(D.addesp){addEsporte(D.addesp);return}
+  if(D.esprm){espCustom=espCustom.filter(x=>x!==D.esprm);gravar(P('extras/esportes'),{lista:espCustom});renderAdd();renderTipos();return}
+  if(b.id==='espCriarOk'){let n=$('#espNome').value.trim().replace(/\s+/g,' ');if(!n){toast('Digite o nome do esporte');return}n=n[0].toUpperCase()+n.slice(1);
+    if(!espCustom.includes(n)&&!ESPORTES.includes(n)){espCustom=[...espCustom,n];gravar(P('extras/esportes'),{lista:espCustom})}renderTipos();addEsporte(n)}});
 const locais=()=>[...new Set(treinos.map(t=>String(t.local||'').trim()).filter(Boolean))];
 function novoTreino(data){tr={id:null,data:data||hojeISO(),tipo:'Musculação',nome:'',duracao:'',kcal:'',notas:'',exs:[],blocos:[],local:(treinos.find(t=>t.local)||{}).local||''};preencherTreino()}
 function abrirTreino(x){if(!x)return;tr=structuredClone(x);tr.exs=tr.exs||[];tr.blocos=tr.blocos||[];preencherTreino();$('#trEditor').scrollIntoView({block:'start'})}
 function preencherTreino(){
   $('#trTit').textContent=tr.id?'Editar treino':'Novo treino';$('#tDel').hidden=!tr.id;
-  $('#tData').value=tr.data;$('#tTipo').value=tr.tipo||'Outro';$('#tNome').value=tr.nome||'';$('#tDur').value=tr.duracao||'';$('#tK').value=tr.kcal||'';$('#tNotas').value=tr.notas||'';$('#tLocal').value=tr.local||'';$('#locaisList').innerHTML=locais().map(l=>`<option value="${esc(l)}">`).join('');
+  $('#tData').value=tr.data;{const t=tr.tipo||'Outro';if(![...$('#tTipo').options].some(o=>o.value===t))$('#tTipo').insertAdjacentHTML('afterbegin','<option>'+esc(t)+'</option>');$('#tTipo').value=t}$('#tNome').value=tr.nome||'';$('#tDur').value=tr.duracao||'';$('#tK').value=tr.kcal||'';$('#tNotas').value=tr.notas||'';$('#tLocal').value=tr.local||'';$('#locaisList').innerHTML=locais().map(l=>`<option value="${esc(l)}">`).join('');
   $('#tModelo').innerHTML='<option value="">—</option>'+modelosTr.map(m=>`<option value="${esc(m.id)}">${esc(m.nome)}</option>`).join('');
   $('#tKNote').textContent=tr.garmin_ref?'Vinculado ao treino do Garmin: kcal e duração vêm do relógio e não contam duas vezes. Só complete os exercícios.':'Se o treino foi gravado no Garmin, use "Detalhar" nele (aba Hoje ou abaixo) em vez de criar outro — assim as kcal não contam duas vezes.';
   $('#aulaBox').hidden=true;renderEx();renderBl();
@@ -872,7 +905,7 @@ const MUSC={
  [CARDIO_G]:[...new Set(HYROX.map(h=>h[0])),'Bike','Air bike','Kettlebell swing','Thruster','Corda','Box jump']
 };
 const GRUPOS=[...Object.keys(MUSC),'Outros'];
-function grupoDe(nome){const k=norm(nome);const c=exCustom.find(e=>norm(e.nome)===k);if(c&&c.grupo)return c.grupo;for(const g in MUSC)if(MUSC[g].some(n=>norm(n)===k))return g;return 'Outros'}
+function grupoDe(nome){const k=norm(nome);if([...ESPORTES,...espCustom].some(e=>norm(e)===k))return 'Esporte';const c=exCustom.find(e=>norm(e.nome)===k);if(c&&c.grupo)return c.grupo;for(const g in MUSC)if(MUSC[g].some(n=>norm(n)===k))return g;return 'Outros'}
 function listaExercicios(){
   const vistos=new Set(),out=[];const add=(nome,tipo,grupo,custom)=>{const k=norm(nome);if(!k||vistos.has(k))return;vistos.add(k);out.push({nome,tipo,grupo,custom})};
   exCustom.forEach(e=>add(e.nome,e.tipo,e.grupo||(e.tipo==='cardio'?CARDIO_G:'Outros'),true));
@@ -1264,6 +1297,7 @@ function ligarPerfil(){
   sub(db.collection(P('modelos_treino')),s=>{modelosTr=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.nome).localeCompare(b.nome,'pt-BR'));if(tr)preencherTreinoModelos()});
   sub(db.collection(P('medidas')),s=>{medidas=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>b.data.localeCompare(a.data));if(!$('#v-corpo').hidden)renderCorpo()});
   sub(db.collection(P('garmin')).orderBy('data','desc').limit(70),s=>{garminHist=s.docs.map(x=>({data:x.id,...x.data()}));if(!$('#v-treino').hidden)renderTreino()});
+  sub(db.doc(P('extras/esportes')),s=>{espCustom=s.exists?(s.data().lista||[]):[];renderTipos();if($('#addSheet').classList.contains('on'))renderAdd()});
   sub(db.doc(P('extras/exercicios')),s=>{exCustom=s.exists?(s.data().lista||[]):[];if($('#exSheet').classList.contains('on'))renderExPicker()});
   sub(db.doc(P('dieta/atual')),s=>{dieta=s.exists?s.data():null;renderDieta()});
   trocarDia(hojeISO());
