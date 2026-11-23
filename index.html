@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diário da Sabrina</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Diário">
+<meta name="theme-color" content="#4a1658">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Archivo+Narrow:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: prático, direto, de bolso — usado várias vezes por dia
+   IDEA: a tabela "Informação Nutricional" do rótulo, aplicada ao seu dia
+   PICTURE: o rótulo do dia no topo: kcal grande, barra até a meta, macros em fios
+   COLOUR/TYPE: papel branco e tinta preta com fios grossos; açaí como acento; azul água; Archivo
+   LAYOUT: coluna única de celular, abas fixas embaixo */
+:root{color-scheme:light dark;--bg:light-dark(#f3f1ee,#121014);--card:light-dark(#fff,#1c1920);--ink:light-dark(#121012,#f1edf3);--mut:light-dark(#5f5a62,#a8a1ad);--soft:light-dark(#e7e3e9,#2d2932);--acai:light-dark(#4a1658,#cf98e3);--agua:light-dark(#1764c4,#72b2ff);--alerta:light-dark(#c8231b,#ff6b5f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,system-ui,sans-serif;overflow-x:clip;padding-bottom:88px}
+main{max-width:560px;margin:0 auto;padding:12px 14px 24px}
+h1,h2,h3{font-family:"Archivo Narrow",Archivo,sans-serif;margin:0;line-height:1.1}
+h2{font-size:20px}
+button,input,select{font:inherit;color:inherit}
+button{min-height:44px;border:2px solid var(--ink);background:var(--card);border-radius:10px;padding:0 14px;font-weight:600;cursor:pointer}
+button.pri{background:var(--acai);border-color:var(--acai);color:light-dark(#fff,#1a0f1e)}
+button.lnk{border:0;background:none;padding:0 6px;color:var(--acai);text-decoration:underline}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--agua);outline-offset:2px}
+input,select{min-height:44px;border:1.5px solid var(--mut);border-radius:8px;background:var(--card);padding:0 10px;font-size:16px;width:100%}
+label{font-size:13px;color:var(--mut);display:grid;gap:3px}
+.top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.top h1{flex:1;font-size:22px;text-align:center}
+.top button{width:44px;padding:0}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px}
+.rot{border:3px solid var(--ink);border-radius:6px;padding:10px 12px}
+.rot .t{font:800 15px Archivo,system-ui,sans-serif;border-bottom:8px solid var(--ink);padding-bottom:4px;display:flex;justify-content:space-between}
+.big{display:flex;align-items:baseline;gap:8px;padding:6px 0 2px}
+.big b{font:800 clamp(44px,13vw,64px)/1 Archivo,system-ui,sans-serif;letter-spacing:-.02em}
+.big span{color:var(--mut)}
+.bar{height:14px;background:var(--soft);border-radius:7px;overflow:hidden;margin:6px 0 4px}
+.bar i{display:block;height:100%;background:var(--acai);border-radius:7px;transition:width .4s}
+.bar.over i{background:var(--alerta)}
+.row{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--ink);padding:5px 0}
+.row.th{border-top:4px solid var(--ink)}
+.row b{font-weight:800}.mut{color:var(--mut);font-size:14px}
+.agua{display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:center}
+.copo{height:90px;border:3px solid var(--agua);border-top-width:0;border-radius:0 0 12px 12px;position:relative;overflow:hidden}
+.copo i{position:absolute;left:0;right:0;bottom:0;background:var(--agua);opacity:.85;transition:height .4s}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.meal h3{font-size:18px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.meal h3 small{font:600 14px Archivo,system-ui,sans-serif;color:var(--mut)}
+.it{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 0;border-top:1px solid var(--soft)}
+.it .n{font-weight:600}.it .k{font-weight:800;text-align:right;white-space:nowrap}
+.it .ctl{grid-column:1/-1;display:flex;gap:6px;align-items:center}
+.it .ctl button{min-height:36px;min-width:40px;padding:0 8px;border-width:1.5px}
+.empty{color:var(--mut);font-size:14px;padding:6px 0}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:120px;position:relative;margin-top:8px}
+.week div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:12px;color:var(--mut)}
+.week i{width:70%;background:var(--acai);border-radius:4px 4px 0 0;min-height:2px}
+.week i.over{background:var(--alerta)}
+.week .meta{position:absolute;left:0;right:0;border-top:2px dashed var(--ink);height:0}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:2px solid var(--ink);display:flex;justify-content:center;gap:4px;padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+nav button{flex:1;max-width:180px;border:0;background:none}
+nav button[aria-current=page]{background:var(--ink);color:var(--card)}
+.sheet{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;justify-content:center;z-index:5}
+.sheet.on{display:flex}
+.sheet>div{background:var(--bg);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
+.pick{display:grid;grid-template-columns:1fr auto;width:100%;text-align:left;border-width:1.5px;margin-top:6px;padding:8px 12px;gap:0 8px}
+.pick small{grid-column:1;color:var(--mut);font-weight:400;font-size:13px}
+.pick b{grid-row:1/3;grid-column:2;align-self:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.step{display:flex;gap:6px;align-items:center}.step input{text-align:center;width:90px}
+.note{font-size:13px;color:var(--mut)}
+.banner{background:var(--alerta);color:#fff;border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:14px;display:none}
+.pessoa{display:flex;align-items:center;gap:8px;margin-bottom:10px}.pessoa label{font-size:14px;white-space:nowrap}.pessoa select{font-weight:800;border:2px solid var(--ink)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 16px;border-radius:10px;font-size:14px;display:none;z-index:9;max-width:90vw}
+.ana{white-space:pre-wrap;font-size:15px;margin-top:8px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.bar i,.copo i{transition:none}}
+</style></head><body>
+<main>
+  <div class="banner" id="banner"></div>
+  <div class="pessoa" id="pessoaBar"><label for="perfilSel">Diário de</label><select id="perfilSel"></select></div>
+
+  <section id="v-hoje">
+    <div class="top"><button id="prev" aria-label="Dia anterior">‹</button><h1 id="dataTxt">Hoje</h1><button id="next" aria-label="Próximo dia">›</button></div>
+    <div class="card rot">
+      <div class="t"><span>Informação do dia</span><span id="metaTxt">meta 2.000 kcal</span></div>
+      <div class="big"><b id="kcal">0</b><span>kcal consumidas</span></div>
+      <div class="bar" id="barK"><i id="barKi" style="width:0"></i></div>
+      <div id="restTxt" class="mut">Faltam 2.000 kcal</div>
+      <div class="row th"><span>Proteínas</span><b id="pT">0 g</b></div>
+      <div class="row"><span>Carboidratos</span><b id="cT">0 g</b></div>
+      <div class="row"><span>Gorduras</span><b id="gT">0 g</b></div>
+      <div class="row th"><span>Treino do dia</span><b id="trT">0 kcal</b></div>
+      <div class="row"><span>Gasto total (Garmin)</span><b id="gaT">—</b></div>
+      <div class="mut" id="saldoTxt"></div>
+    </div>
+
+    <div class="card agua">
+      <div class="copo" aria-hidden="true"><i id="aguaI" style="height:0"></i></div>
+      <div>
+        <h2><span id="aguaTxt">0</span> <span class="mut">/ <span id="aguaMeta">3.000</span> ml de água</span></h2>
+        <div class="btns"><button data-agua="250">+250</button><button data-agua="500">+500</button><button data-agua="-250" aria-label="Desfazer 250 ml">−250</button></div>
+      </div>
+    </div>
+
+    <div id="meals"></div>
+
+    <div class="card">
+      <h2>Treinos</h2>
+      <div id="treinos"></div>
+      <div class="grid2" style="margin-top:8px"><label>Treino<input id="trNome" placeholder="Ex.: HYROX"></label><label>kcal<input id="trK" type="number" inputmode="numeric"></label></div>
+      <div class="btns"><button id="trAdd">Lançar treino</button></div>
+      <p class="note">Os treinos do Garmin entram sozinhos. Lance aqui só o que o relógio não registrou.</p>
+      <div id="relBox" style="margin-top:12px;border-top:1px solid var(--soft);padding-top:10px">
+        <h3>Gasto do dia (Apple Watch)</h3>
+        <p class="note">No iPhone: app Saúde → Atividade → "Energia ativa" e "Energia em repouso" de hoje. Lance à noite.</p>
+        <div class="grid2"><label>Energia ativa (kcal)<input id="rAt" type="number" inputmode="numeric"></label><label>Energia em repouso (kcal)<input id="rRep" type="number" inputmode="numeric"></label></div>
+        <div class="btns"><button id="rSalvar">Salvar gasto do relógio</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Últimos 7 dias</h2>
+      <div class="week" id="week"></div>
+      <p class="note">Linha tracejada = meta. Vermelho = acima da meta.</p>
+      <div class="btns"><button id="anaBtn" hidden>Pedir análise do dia</button></div>
+      <div class="ana" id="ana"></div>
+    </div>
+  </section>
+
+  <section id="v-prod" hidden>
+    <div class="top"><h1>Produtos</h1></div>
+    <div class="card">
+      <h2>Ler rótulo</h2>
+      <p class="note">Tire a foto da tabela de Informação Nutricional bem de frente. O Claude lê a porção e os valores; você confere antes de salvar.</p>
+      <label>Nome do produto (opcional)<input id="fotoNome" placeholder="Ex.: Açaí Swift 500 g"></label>
+      <input type="file" id="foto" accept="image/*" capture="environment" hidden>
+      <div class="btns"><button class="pri" id="fotoBtn">Fotografar rótulo</button><button id="novoProd">Cadastrar à mão</button></div>
+      <div id="fotoSt" class="note"></div>
+      <div id="bcBox" hidden>
+        <label>Código de barras (números embaixo das barras)<input id="bcCod" inputmode="numeric" placeholder="7891234567890"></label>
+        <div class="btns"><button class="pri" id="bcBtn">Buscar produto</button><button id="novoProd2">Cadastrar à mão</button></div>
+        <p class="note">Busca na base aberta Open Food Facts. Nem todo produto brasileiro está lá; se não achar, cadastre à mão olhando o rótulo.</p>
+      </div>
+    </div>
+    <div class="card" id="formProd" hidden>
+      <h2 id="formTit">Produto</h2>
+      <div style="display:grid;gap:8px;margin-top:8px">
+        <label>Nome<input id="fNome"></label>
+        <div class="grid2"><label>Porção (como no rótulo)<input id="fPor" placeholder="1 unidade"></label><label>Porção em g/ml<input id="fG" type="number" inputmode="decimal"></label></div>
+        <div class="grid4"><label>kcal<input id="fK" type="number" inputmode="decimal"></label><label>Prot. g<input id="fP" type="number" inputmode="decimal"></label><label>Carb. g<input id="fC" type="number" inputmode="decimal"></label><label>Gord. g<input id="fGo" type="number" inputmode="decimal"></label></div>
+        <div id="fObs" class="note"></div>
+        <div class="btns"><button class="pri" id="fSalvar">Salvar produto</button><button id="fCanc">Cancelar</button><button id="fDel" hidden>Excluir</button></div>
+      </div>
+    </div>
+    <div class="card"><input id="busca2" placeholder="Buscar produto" aria-label="Buscar produto"><div id="lista2"></div></div>
+  </section>
+
+  <section id="v-aj" hidden>
+    <div class="top"><h1>Ajustes</h1></div>
+    <div class="card" style="display:grid;gap:10px">
+      <label>Nome<input id="cNome"></label>
+      <div class="grid2"><label>Meta diária (kcal)<input id="cK" type="number" inputmode="numeric"></label><label>Meta de água (ml)<input id="cA" type="number" inputmode="numeric"></label></div>
+      <div class="grid4"><label>Café<input id="h_cafe" type="time"></label><label>Almoço<input id="h_almoco" type="time"></label><label>Lanche<input id="h_lanche" type="time"></label><label>Jantar<input id="h_jantar" type="time"></label></div>
+      <label>Sobre você (para a análise do dia)<input id="cCtx" placeholder="Ex.: 70 kg, meta 65 kg, treina 3x/semana"></label>
+      <div class="btns"><button class="pri" id="cSalvar">Salvar ajustes</button></div>
+      <p class="note">Os alarmes tocam pela agenda do seu celular (arquivo que o Claude gerou). Se mudar os horários aqui, peça um arquivo de agenda novo.</p>
+    </div>
+    <div class="card" id="bkCard" style="display:grid;gap:10px" hidden>
+      <h2>Cópia de segurança</h2>
+      <p class="note">Os dados ficam só neste iPhone. Baixe uma cópia de vez em quando (ex.: toda semana) e guarde no app Arquivos ou no iCloud.</p>
+      <div class="btns"><button id="bkSave">Baixar cópia</button><button id="bkLoad">Restaurar cópia</button></div>
+      <input type="file" id="bkFile" accept="application/json,.json" hidden>
+    </div>
+    <div class="card" id="pessoaCard" style="display:grid;gap:10px">
+      <h2>Adicionar pessoa</h2>
+      <label>Nome<input id="novoNome" placeholder="Ex.: Sabrina"></label>
+      <div class="btns"><button id="novoPerfil">Criar diário</button></div>
+      <p class="note">Cada pessoa tem diário, metas, água, treinos e refeições prontas próprios. Os produtos e rótulos são compartilhados.</p>
+    </div>
+  </section>
+</main>
+
+<nav><button data-v="hoje" aria-current="page">Hoje</button><button data-v="prod">Produtos</button><button data-v="aj">Ajustes</button></nav>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTit"><div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 id="shTit">Adicionar</h2><button id="shClose">Fechar</button></div>
+  <label style="margin-top:10px">Refeição<select id="shRef"></select></label>
+  <input id="busca" placeholder="Buscar produto ou refeição salva" aria-label="Buscar" style="margin-top:10px">
+  <div id="sel" class="card" style="margin-top:10px" hidden>
+    <b id="selNome"></b><div class="note" id="selPor"></div>
+    <div class="step" style="margin-top:8px"><button data-q="-0.5" aria-label="Menos meia porção">−</button><input id="selQ" type="number" step="0.5" inputmode="decimal" value="1" aria-label="Porções"><button data-q="0.5" aria-label="Mais meia porção">+</button><span class="mut">porções · <b id="selK">0</b> kcal</span></div>
+    <div class="btns"><button class="pri" id="selAdd">Adicionar</button></div>
+  </div>
+  <div id="shList"></div>
+  <h3 style="margin-top:16px">Lançar avulso</h3>
+  <div class="grid2" style="margin-top:6px"><label>O que comeu<input id="avNome" placeholder="Ex.: pastel de feira"></label><label>kcal<input id="avK" type="number" inputmode="numeric"></label></div>
+  <div class="btns"><button id="avAdd">Adicionar avulso</button></div>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* Armazenamento local (substitui o banco do Claude). Tudo fica neste aparelho. */
+(()=>{
+const KEY='diario-alimentar-v1';
+let store={};try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch{store={}}
+if(!Object.keys(store).length){store={"perfis/sabrina": {"nome": "Sabrina", "contexto": "", "meta_kcal": 0, "meta_agua": 2500, "horarios": {"cafe": "07:00", "almoco": "12:00", "lanche": "17:00", "jantar": "20:00"}}, "produtos/rap10": {"nome": "Rap10 Tradicional", "porcao": "1 unidade (40 g)", "porcao_g": 40, "kcal": 110, "prot": 3.3, "carb": 18, "gord": 2.8}, "produtos/mussarela": {"nome": "Mussarela (fatia)", "porcao": "1 fatia (20 g)", "porcao_g": 20, "kcal": 66, "prot": 4.5, "carb": 0.6, "gord": 5}, "produtos/banana": {"nome": "Banana prata", "porcao": "1 média (70 g)", "porcao_g": 70, "kcal": 69, "prot": 0.9, "carb": 18.2, "gord": 0.1}, "produtos/mamao": {"nome": "Mamão papaya", "porcao": "½ mamão (150 g)", "porcao_g": 150, "kcal": 60, "prot": 0.7, "carb": 15.5, "gord": 0.2}, "produtos/arroz": {"nome": "Arroz branco cozido", "porcao": "100 g (≈ 4 col. sopa)", "porcao_g": 100, "kcal": 128, "prot": 2.5, "carb": 28.1, "gord": 0.2}, "produtos/feijao": {"nome": "Feijão carioca cozido", "porcao": "1 concha (86 g)", "porcao_g": 86, "kcal": 65, "prot": 4.1, "carb": 11.7, "gord": 0.4}, "produtos/macarrao": {"nome": "Macarrão cozido", "porcao": "100 g", "porcao_g": 100, "kcal": 158, "prot": 5.8, "carb": 30.9, "gord": 0.9}, "produtos/pao-frances": {"nome": "Pão francês", "porcao": "1 unidade (50 g)", "porcao_g": 50, "kcal": 150, "prot": 4, "carb": 29.3, "gord": 1.6}, "produtos/ovo": {"nome": "Ovo cozido", "porcao": "1 unidade (50 g)", "porcao_g": 50, "kcal": 73, "prot": 6.6, "carb": 0.3, "gord": 4.8}, "produtos/frango": {"nome": "Peito de frango grelhado", "porcao": "100 g", "porcao_g": 100, "kcal": 159, "prot": 32, "carb": 0, "gord": 2.5}, "produtos/leite-po": {"nome": "Leite em pó integral", "porcao": "20 g (≈ 2 col. sopa)", "porcao_g": 20, "kcal": 99, "prot": 5.1, "carb": 7.8, "gord": 5.3}};try{localStorage.setItem(KEY,JSON.stringify(store))}catch{}}
+try{if(!localStorage.getItem('perfil'))localStorage.setItem('perfil','sabrina')}catch{}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch{}
+const subs=new Set();
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){alertBox()}};
+function alertBox(){const b=document.getElementById('banner');if(b){b.textContent='Não consegui salvar no aparelho (memória cheia?). Faça uma cópia de segurança.';b.style.display='block'}}
+const notify=()=>{for(const f of [...subs])setTimeout(f,0)};
+const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
+const snap=p=>({id:p.split('/').pop(),exists:p in store,data:()=>clone(store[p]),metadata:{fromCache:false,hasPendingWrites:false}});
+const docRef=p=>({id:p.split('/').pop(),path:p,
+  get:async()=>snap(p),
+  set:async d=>{store[p]=clone(d);persist();notify()},
+  update:async d=>{store[p]={...(store[p]||{}),...clone(d)};persist();notify()},
+  delete:async()=>{delete store[p];persist();notify()},
+  onSnapshot(n){const f=()=>n(snap(p));subs.add(f);setTimeout(f,0);return()=>subs.delete(f)},
+  collection:c=>coll(p+'/'+c)});
+const coll=(c,ord,lim)=>({path:c,
+  orderBy:(f,d)=>coll(c,[f,d||'asc'],lim),limit:n=>coll(c,ord,n),
+  doc:id=>docRef(c+'/'+(id||Date.now().toString(36)+Math.random().toString(36).slice(2,7))),
+  add:async d=>{const r=docRef(c+'/'+Date.now().toString(36));await r.set(d);return r},
+  _q(){const depth=c.split('/').length+1;let docs=Object.keys(store).filter(k=>k.startsWith(c+'/')&&k.split('/').length===depth).sort().map(snap);
+    if(ord)docs.sort((a,b)=>String(a.data()[ord[0]]??'').localeCompare(String(b.data()[ord[0]]??''))*(ord[1]==='desc'?-1:1));
+    if(lim)docs=docs.slice(0,lim);return{docs,size:docs.length,empty:!docs.length,docChanges:()=>[],metadata:{fromCache:false}}},
+  async get(){return this._q()},
+  onSnapshot(n){const f=()=>n(this._q());subs.add(f);setTimeout(f,0);return()=>subs.delete(f)}});
+const db={doc:docRef,collection:c=>coll(c)};
+window.STANDALONE={exportar:()=>JSON.stringify({app:'diario-alimentar',versao:1,data:new Date().toISOString(),store},null,1),
+  importar:t=>{const j=JSON.parse(t);if(!j||!j.store||typeof j.store!=='object')throw 0;store=j.store;persist()}};
+window.claude={use:async n=>n==='db'?db:null};
+})();
+</script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(n,d=0)=>Number(n||0).toLocaleString('pt-BR',{maximumFractionDigits:d,minimumFractionDigits:0});
+const num=v=>{const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:0};
+const hojeISO=()=>new Date().toLocaleDateString('sv-SE');
+const addDias=(iso,n)=>{const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.toLocaleDateString('sv-SE')};
+const REFS=[['cafe','Café da manhã'],['almoco','Almoço'],['lanche','Lanche da tarde'],['jantar','Jantar'],['extra','Extras']];
+const DEF_CFG={nome:'',contexto:'',meta_kcal:0,meta_agua:3000,horarios:{cafe:'07:00',almoco:'12:00',lanche:'17:00',jantar:'20:00'}};
+
+let db=null,sample=null,dia=hojeISO(),cfg=structuredClone(DEF_CFG),perfis=[],subsPerfil=[];
+let perfil='andrew';try{perfil=localStorage.getItem('perfil')||'andrew'}catch{}
+const P=x=>'perfis/'+perfil+(x?'/'+x:'');
+let day={data:dia,itens:[],agua:0,treinos:[]},garmin=null,produtos=[],modelos=[],semana=[];
+let unsubDay=null,unsubGar=null,sel=null,editId=null;
+
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)}
+function banner(t){const b=$('#banner');b.textContent=t||'';b.style.display=t?'block':'none'}
+
+/* gravação: uma por documento de cada vez */
+const filas={};
+function gravar(path,body){
+  if(!db)return Promise.resolve();
+  filas[path]=(filas[path]||Promise.resolve()).then(()=>db.doc(path).set(body)).catch(e=>{
+    toast(e&&e.code==='quota_exceeded'?'Banco cheio: apague dados antigos.':'Não salvou ('+(e&&e.code||'erro')+'). Tente de novo.');
+  });
+  return filas[path];
+}
+const salvarDia=()=>{day.data=dia;render();return gravar(P('dias/'+dia),structuredClone(day))};
+
+const tot=(its)=>its.reduce((a,i)=>{const q=num(i.qtd||1);a.k+=num(i.kcal)*q;a.p+=num(i.prot)*q;a.c+=num(i.carb)*q;a.g+=num(i.gord)*q;return a},{k:0,p:0,c:0,g:0});
+
+function refAgora(){
+  const h=new Date().toTimeString().slice(0,5),H=cfg.horarios;
+  if(h<'10:30')return 'cafe';if(h<'15:00')return 'almoco';if(h<'18:30')return 'lanche';if(h<'23:00')return 'jantar';return 'extra';
+}
+
+function render(){
+  const t=tot(day.itens||[]),metaReal=num(cfg.meta_kcal),meta=metaReal||1e9;
+  const d=new Date(dia+'T12:00:00');
+  $('#dataTxt').textContent=dia===hojeISO()?'Hoje':d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
+  $('#next').disabled=dia>=hojeISO();
+  $('#metaTxt').textContent=metaReal?'meta '+fmt(metaReal)+' kcal':'sem meta';
+  $('#kcal').textContent=fmt(t.k);
+  $('#barKi').style.width=Math.min(100,t.k/meta*100)+'%';
+  $('#barK').classList.toggle('over',t.k>meta);
+  $('#restTxt').textContent=!metaReal?'Defina sua meta de kcal em Ajustes':t.k<=meta?'Faltam '+fmt(meta-t.k)+' kcal para a meta':'Passou '+fmt(t.k-meta)+' kcal da meta';
+  $('#pT').textContent=fmt(t.p)+' g';$('#cT').textContent=fmt(t.c)+' g';$('#gT').textContent=fmt(t.g)+' g';
+  const trG=(garmin&&garmin.treinos||[]),trM=(day.treinos||[]);
+  const trK=[...trG,...trM].reduce((a,x)=>a+num(x.kcal),0);
+  $('#trT').textContent=fmt(trK)+' kcal';
+  const rel=day.relogio||{},gasto=(garmin&&num(garmin.kcal_total))||(num(rel.ativa)+num(rel.repouso));
+  $('#relBox').hidden=!!garmin;if(document.activeElement!==$('#rAt'))$('#rAt').value=rel.ativa||'';if(document.activeElement!==$('#rRep'))$('#rRep').value=rel.repouso||'';
+  $('#gaT').textContent=gasto?fmt(gasto)+' kcal':'—';$('#gaT').previousElementSibling.textContent=garmin?'Gasto total (Garmin)':'Gasto total (relógio)';
+  $('#saldoTxt').textContent=gasto?(t.k<gasto?'Déficit real de '+fmt(gasto-t.k)+' kcal':'Superávit de '+fmt(t.k-gasto)+' kcal')+(garmin&&garmin.atualizado?' · Garmin às '+String(garmin.atualizado).slice(11,16):''):'Lance o gasto do relógio no fim do dia para ver o saldo real.';
+  /* água */
+  const am=num(cfg.meta_agua)||3000;
+  $('#aguaTxt').textContent=fmt(day.agua);$('#aguaMeta').textContent=fmt(am);
+  $('#aguaI').style.height=Math.min(100,num(day.agua)/am*100)+'%';
+  /* refeições */
+  $('#meals').innerHTML=REFS.map(([k,nome])=>{
+    const its=(day.itens||[]).filter(i=>i.ref===k),tk=tot(its).k,h=cfg.horarios[k];
+    if(k==='extra'&&!its.length)return '';
+    return `<div class="card meal"><h3><span>${nome}${h?` <small>${esc(h)}</small>`:''}</span><small>${fmt(tk)} kcal</small></h3>
+      ${its.length?its.map(i=>`<div class="it"><span class="n">${esc(i.nome)}</span><span class="k">${fmt(num(i.kcal)*num(i.qtd||1))} kcal</span>
+        <div class="ctl"><span class="mut">${fmt(i.qtd,2)} × ${esc(i.porcao||'porção')}</span><span style="flex:1"></span>
+        <button data-iq="${esc(i.id)}" data-d="-0.5" aria-label="Menos">−</button><button data-iq="${esc(i.id)}" data-d="0.5" aria-label="Mais">+</button><button data-del="${esc(i.id)}" aria-label="Remover">×</button></div></div>`).join(''):'<div class="empty">Nada lançado.</div>'}
+      <div class="btns"><button data-add="${k}">+ Adicionar</button>${its.length?`<button class="lnk" data-mod="${k}">Salvar como refeição pronta</button>`:''}</div></div>`;
+  }).join('');
+  /* treinos */
+  $('#treinos').innerHTML=(trG.length||trM.length)?[...trG.map(x=>({...x,g:1})),...trM].map((x,i)=>`<div class="it"><span class="n">${esc(x.nome)}${x.g?' <span class="mut">· Garmin'+(x.duracao_min?', '+fmt(x.duracao_min)+' min':'')+'</span>':''}</span><span class="k">${fmt(x.kcal)} kcal</span>${x.g?'':`<div class="ctl"><span style="flex:1"></span><button data-trdel="${i-trG.length}" aria-label="Remover treino">×</button></div>`}</div>`).join(''):'<div class="empty">Nenhum treino neste dia.</div>';
+  renderSemana();
+}
+
+function renderSemana(){
+  const meta=num(cfg.meta_kcal)||2000,mapa={};
+  semana.forEach(s=>mapa[s.data]=s);mapa[dia]=day;
+  const dias=[...Array(7)].map((_,i)=>addDias(hojeISO(),i-6));
+  const vals=dias.map(d=>tot((mapa[d]&&mapa[d].itens)||[]).k);
+  const top=Math.max(meta*1.3,...vals);
+  $('#week').innerHTML=`<span class="meta" style="bottom:calc(18px + (100% - 18px) * ${meta/top})"></span>`+dias.map((d,i)=>`<div><i class="${vals[i]>meta?'over':''}" style="height:calc((100% - 18px) * ${vals[i]/top})" title="${fmt(vals[i])} kcal"></i>${new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'narrow'})}</div>`).join('');
+}
+
+function renderProdutos(){
+  const f=$('#busca2').value.trim().toLowerCase();
+  const l=produtos.filter(p=>!f||String(p.nome).toLowerCase().includes(f));
+  $('#lista2').innerHTML=l.length?l.map(p=>`<button class="pick" data-edit="${esc(p.id)}"><span>${esc(p.nome)}</span><small>${esc(p.porcao)}${p.porcao_g&&!/\d\s*g\b/.test(p.porcao||'')?' ('+fmt(p.porcao_g)+' g)':''} · P ${fmt(p.prot,1)} · C ${fmt(p.carb,1)} · G ${fmt(p.gord,1)}</small><b>${fmt(p.kcal)} kcal</b></button>`).join(''):'<div class="empty">Nenhum produto ainda.</div>';
+}
+
+function renderSheet(){
+  const f=$('#busca').value.trim().toLowerCase(),m=s=>!f||String(s).toLowerCase().includes(f);
+  const ms=modelos.filter(x=>m(x.nome)),ps=produtos.filter(x=>m(x.nome));
+  $('#shList').innerHTML=(ms.length?'<h3 style="margin-top:14px">Refeições prontas</h3>'+ms.map(x=>`<button class="pick" data-mpick="${esc(x.id)}"><span>${esc(x.nome)}</span><small>${(x.itens||[]).length} itens · toque para lançar tudo</small><b>${fmt(tot(x.itens||[]).k)} kcal</b></button>`).join(''):'')
+    +'<h3 style="margin-top:14px">Produtos</h3>'+(ps.length?ps.map(p=>`<button class="pick" data-ppick="${esc(p.id)}"><span>${esc(p.nome)}</span><small>${esc(p.porcao)}</small><b>${fmt(p.kcal)} kcal</b></button>`).join(''):'<div class="empty">Nenhum produto. Cadastre na aba Produtos.</div>');
+}
+
+function abrirSheet(ref){
+  $('#shRef').innerHTML=REFS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
+  $('#shRef').value=ref||refAgora();sel=null;$('#sel').hidden=true;$('#busca').value='';
+  renderSheet();$('#sheet').classList.add('on');
+}
+const fecharSheet=()=>$('#sheet').classList.remove('on');
+const novoId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function itemDe(p,q,ref){return{id:novoId(),ref,nome:p.nome,porcao:p.porcao||'porção',qtd:q,kcal:num(p.kcal),prot:num(p.prot),carb:num(p.carb),gord:num(p.gord),hora:new Date().toTimeString().slice(0,5)}}
+
+/* eventos */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.v){for(const n of document.querySelectorAll('nav button')){if(n===b)n.setAttribute('aria-current','page');else n.removeAttribute('aria-current')}
+    ['hoje','prod','aj'].forEach(v=>$('#v-'+v).hidden=v!==b.dataset.v);scrollTo(0,0);return}
+  if(b.dataset.agua){day.agua=Math.max(0,num(day.agua)+num(b.dataset.agua));salvarDia();return}
+  if(b.dataset.add){abrirSheet(b.dataset.add);return}
+  if(b.dataset.del){day.itens=day.itens.filter(i=>i.id!==b.dataset.del);salvarDia();return}
+  if(b.dataset.iq){const it=day.itens.find(i=>i.id===b.dataset.iq);if(it){it.qtd=Math.max(0.5,num(it.qtd)+num(b.dataset.d));salvarDia()}return}
+  if(b.dataset.trdel!==undefined){day.treinos.splice(+b.dataset.trdel,1);salvarDia();return}
+  if(b.dataset.mod){const its=day.itens.filter(i=>i.ref===b.dataset.mod);const nome=(REFS.find(r=>r[0]===b.dataset.mod)[1])+' · '+its.map(i=>i.nome).slice(0,2).join(' + ');
+    const id=novoId();modelos.push({id,nome,itens:its.map(({id,ref,hora,...r})=>r)});gravar(P('modelos/'+id),{nome,itens:its.map(({id,ref,hora,...r})=>r)});toast('Refeição pronta salva');return}
+  if(b.dataset.ppick){sel=produtos.find(p=>p.id===b.dataset.ppick);if(!sel)return;$('#sel').hidden=false;$('#selNome').textContent=sel.nome;$('#selPor').textContent=(sel.porcao||'porção')+' = '+fmt(sel.kcal)+' kcal';$('#selQ').value=1;atualizaSel();$('#sel').scrollIntoView({block:'nearest'});return}
+  if(b.dataset.mpick){const m=modelos.find(x=>x.id===b.dataset.mpick);if(!m)return;const ref=$('#shRef').value;(m.itens||[]).forEach(i=>day.itens.push({...i,id:novoId(),ref,hora:new Date().toTimeString().slice(0,5)}));salvarDia();fecharSheet();toast(m.nome+' lançado');return}
+  if(b.dataset.q){$('#selQ').value=Math.max(0.5,num($('#selQ').value)+num(b.dataset.q));atualizaSel();return}
+  if(b.dataset.edit){abrirForm(produtos.find(p=>p.id===b.dataset.edit));return}
+});
+function atualizaSel(){if(sel)$('#selK').textContent=fmt(num(sel.kcal)*num($('#selQ').value))}
+$('#selQ').addEventListener('input',atualizaSel);
+$('#selAdd').onclick=()=>{if(!sel)return;day.itens.push(itemDe(sel,num($('#selQ').value)||1,$('#shRef').value));salvarDia();fecharSheet();toast(sel.nome+' adicionado')};
+$('#avAdd').onclick=()=>{const n=$('#avNome').value.trim(),k=num($('#avK').value);if(!n||!k){toast('Preencha nome e kcal');return}
+  day.itens.push(itemDe({nome:n,kcal:k,porcao:'avulso'},1,$('#shRef').value));$('#avNome').value=$('#avK').value='';salvarDia();fecharSheet()};
+$('#busca').addEventListener('input',renderSheet);$('#busca2').addEventListener('input',renderProdutos);
+$('#shClose').onclick=fecharSheet;$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')fecharSheet()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharSheet()});
+$('#trAdd').onclick=()=>{const n=$('#trNome').value.trim()||'Treino',k=num($('#trK').value);if(!k){toast('Informe as kcal do treino');return}
+  (day.treinos=day.treinos||[]).push({nome:n,kcal:k});$('#trNome').value=$('#trK').value='';salvarDia()};
+$('#rSalvar').onclick=()=>{day.relogio={ativa:num($('#rAt').value),repouso:num($('#rRep').value)};salvarDia();toast('Gasto do relógio salvo')};
+$('#prev').onclick=()=>trocarDia(addDias(dia,-1));$('#next').onclick=()=>{if(dia<hojeISO())trocarDia(addDias(dia,1))};
+
+/* produtos */
+function abrirForm(p,obs){
+  editId=p&&p.id||null;$('#formProd').hidden=false;$('#formTit').textContent=editId?'Editar produto':'Novo produto';
+  $('#fNome').value=p?.nome||'';$('#fPor').value=p?.porcao||'';$('#fG').value=p?.porcao_g||'';
+  $('#fK').value=p?.kcal??'';$('#fP').value=p?.prot??'';$('#fC').value=p?.carb??'';$('#fGo').value=p?.gord??'';
+  $('#fObs').textContent=obs||'';$('#fDel').hidden=!editId;$('#formProd').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('#novoProd').onclick=()=>abrirForm(null);$('#fCanc').onclick=()=>$('#formProd').hidden=true;
+$('#fSalvar').onclick=()=>{
+  const p={nome:$('#fNome').value.trim(),porcao:$('#fPor').value.trim()||'1 porção',porcao_g:num($('#fG').value),kcal:num($('#fK').value),prot:num($('#fP').value),carb:num($('#fC').value),gord:num($('#fGo').value),atualizado:new Date().toISOString()};
+  if(!p.nome||!p.kcal){toast('Nome e kcal são obrigatórios');return}
+  const id=editId||novoId();const i=produtos.findIndex(x=>x.id===id);i>=0?produtos[i]={id,...p}:produtos.push({id,...p});
+  gravar('produtos/'+id,p);$('#formProd').hidden=true;renderProdutos();toast('Produto salvo');
+};
+$('#fDel').onclick=()=>{if(!editId)return;if($('#fDel').dataset.ok!=='1'){$('#fDel').dataset.ok='1';$('#fDel').textContent='Toque de novo para excluir';return}
+  $('#fDel').dataset.ok='';$('#fDel').textContent='Excluir';produtos=produtos.filter(x=>x.id!==editId);db&&db.doc('produtos/'+editId).delete();$('#formProd').hidden=true;renderProdutos()};
+
+/* leitura do rótulo */
+$('#fotoBtn').onclick=()=>$('#foto').click();
+async function reduzir(file){
+  try{const bmp=await createImageBitmap(file);const s=Math.min(1,1600/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.85))}catch{return file}
+}
+$('#foto').addEventListener('change',async()=>{
+  const f=$('#foto').files[0];if(!f)return;if(!sample){toast('Leitura por foto indisponível aqui');return}
+  const st=$('#fotoSt');st.textContent='Lendo o rótulo…';$('#fotoBtn').disabled=true;
+  try{
+    const img=await reduzir(f);
+    const r=await sample.json(`Você lê fotos de rótulos de alimentos brasileiros (tabela "INFORMAÇÃO NUTRICIONAL"). Nome informado pelo usuário: "${$('#fotoNome').value.replace(/"/g,"'")}".
+Responda SOMENTE um objeto JSON: {"nome":string,"porcao":string,"porcao_g":number,"kcal":number,"prot":number,"carb":number,"gord":number,"legivel":boolean,"obs":string}.
+Regras: valores POR PORÇÃO do rótulo (ex.: porcao "1 unidade (40 g)", porcao_g 40). Se o rótulo só tiver valores por 100 g, use porcao "100 g". Use ponto decimal. Se não tiver nome informado, deduza do rótulo/embalagem. Se a foto não estiver legível, legivel=false e explique em obs. Em obs (máx. 1 frase em português) diga qualquer dúvida de leitura.`,{images:[img],modelTier:'default'});
+    if(!r||r.legivel===false){st.textContent='Não consegui ler: '+(r&&r.obs||'tente outra foto, mais de frente e com luz.');return}
+    abrirForm({nome:r.nome||$('#fotoNome').value,porcao:r.porcao,porcao_g:r.porcao_g,kcal:r.kcal,prot:r.prot,carb:r.carb,gord:r.gord},'Lido da foto — confira com o rótulo antes de salvar. '+(r.obs||''));
+    st.textContent='';$('#fotoNome').value='';
+  }catch(e){st.textContent=e&&e.code==='rate_limited'?'Muitas leituras seguidas; espere um pouco.':'Falhou a leitura ('+(e&&e.code||'erro')+'). Cadastre à mão ou tente de novo.'}
+  finally{$('#fotoBtn').disabled=false;$('#foto').value=''}
+});
+
+/* análise do dia */
+$('#anaBtn').onclick=async()=>{
+  const t=tot(day.itens),box=$('#ana');box.textContent='Analisando…';$('#anaBtn').disabled=true;
+  const dados={dia,meta_kcal:cfg.meta_kcal,meta_agua_ml:cfg.meta_agua,consumido:{kcal:Math.round(t.k),prot:Math.round(t.p),carb:Math.round(t.c),gord:Math.round(t.g)},agua_ml:day.agua,
+    refeicoes:day.itens.map(i=>({ref:i.ref,nome:i.nome,qtd:i.qtd,kcal:Math.round(num(i.kcal)*num(i.qtd))})),treinos:[...(garmin&&garmin.treinos||[]),...(day.treinos||[])],gasto_garmin:garmin&&garmin.kcal_total};
+  try{await sample(`Você é um assistente de nutrição esportiva. O usuário (${(cfg.nome||'').replace(/[`$]/g,'')}; contexto: ${(cfg.contexto||'não informado').replace(/[`$]/g,'')}) quer um comentário curto sobre o dia. Dados: ${JSON.stringify(dados)}.
+Escreva em português do Brasil, no máximo 6 linhas, sem títulos: como ficou frente à meta, proteína, água e uma sugestão prática para o resto do dia ou para amanhã. Não dê diagnóstico médico.`,{modelTier:'quick',onText:({text})=>{box.textContent=text}})}
+  catch(e){box.textContent='Não foi possível analisar agora.'}finally{$('#anaBtn').disabled=false}
+};
+
+/* ajustes */
+function preencherCfg(){$('#cNome').value=cfg.nome||'';$('#cCtx').value=cfg.contexto||'';$('#cK').value=cfg.meta_kcal||'';$('#cA').value=cfg.meta_agua;for(const k of ['cafe','almoco','lanche','jantar'])$('#h_'+k).value=cfg.horarios[k]||''}
+$('#cSalvar').onclick=()=>{cfg={nome:$('#cNome').value.trim()||perfil,contexto:$('#cCtx').value.trim(),meta_kcal:num($('#cK').value),meta_agua:num($('#cA').value)||3000,horarios:Object.fromEntries(['cafe','almoco','lanche','jantar'].map(k=>[k,$('#h_'+k).value]))};gravar(P(),cfg);render();renderPerfis();toast('Ajustes salvos')};
+
+/* pessoas */
+function renderPerfis(){const l=perfis.length?perfis:[{id:perfil,nome:cfg.nome||perfil}];
+  $('#perfilSel').innerHTML=l.map(x=>`<option value="${esc(x.id)}">${esc(x.id===perfil&&cfg.nome?cfg.nome:x.nome)}</option>`).join('');$('#perfilSel').value=perfil}
+function ligarPerfil(){
+  subsPerfil.forEach(f=>f());subsPerfil=[];cfg=structuredClone(DEF_CFG);modelos=[];semana=[];preencherCfg();
+  subsPerfil.push(db.doc(P()).onSnapshot(s=>{if(s.exists){const v=s.data();cfg={...DEF_CFG,...v,horarios:{...DEF_CFG.horarios,...(v.horarios||{})}}}preencherCfg();renderPerfis();render()},()=>{}));
+  subsPerfil.push(db.collection(P('modelos')).onSnapshot(s=>{modelos=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.nome).localeCompare(b.nome,'pt-BR'));if($('#sheet').classList.contains('on'))renderSheet()},()=>{}));
+  subsPerfil.push(db.collection(P('dias')).orderBy('data','desc').limit(8).onSnapshot(s=>{semana=s.docs.map(x=>x.data());renderSemana()},()=>{}));
+  trocarDia(hojeISO());
+}
+function trocarPerfil(id){perfil=id;try{localStorage.setItem('perfil',id)}catch{}$('#ana').textContent='';if(db)ligarPerfil();renderPerfis()}
+$('#perfilSel').addEventListener('change',e=>trocarPerfil(e.target.value));
+$('#novoPerfil').onclick=async()=>{const n=$('#novoNome').value.trim();if(!n){toast('Digite o nome');return}
+  const id=n.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||novoId();
+  if(perfis.some(x=>x.id===id)){toast('Essa pessoa já existe');return}
+  await gravar('perfis/'+id,{...structuredClone(DEF_CFG),nome:n});$('#novoNome').value='';trocarPerfil(id);
+  document.querySelector('nav [data-v="aj"]').click();toast('Diário de '+n+' criado. Defina a meta.')};
+
+/* versão independente (fora do Claude) */
+if(window.STANDALONE){
+  $('#pessoaBar').hidden=true;$('#pessoaCard').hidden=true;$('#bkCard').hidden=false;$('#bcBox').hidden=false;
+  $('#fotoNome').closest('label').hidden=true;$('#fotoBtn').closest('.btns').hidden=true;
+  $('#fotoBtn').closest('.card').querySelector('h2').textContent='Novo produto';
+  $('#fotoBtn').closest('.card').querySelector('.note').textContent='Busque pelo código de barras ou cadastre copiando a tabela do rótulo.';
+  $('#novoProd2').onclick=()=>abrirForm(null);
+  $('#bcBtn').onclick=async()=>{
+    const c=$('#bcCod').value.replace(/\D/g,'');if(c.length<8){toast('Digite o código completo');return}
+    $('#bcBtn').disabled=true;$('#fotoSt').textContent='Buscando…';
+    try{
+      const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+c+'.json?fields=product_name,brands,serving_size,serving_quantity,nutriments');
+      const j=await r.json();const pr=j&&j.product;
+      if(!pr||j.status!==1){$('#fotoSt').textContent='Produto não encontrado. Cadastre à mão.';abrirForm({nome:''});return}
+      const n=pr.nutriments||{},sq=num(pr.serving_quantity),srv=sq&&n['energy-kcal_serving']!=null;
+      const v=k=>srv?num(n[k+'_serving']):num(n[k+'_100g']);
+      abrirForm({nome:[pr.product_name,pr.brands&&pr.brands.split(',')[0]].filter(Boolean).join(' · '),porcao:srv?(pr.serving_size||sq+' g'):'100 g',porcao_g:srv?sq:100,
+        kcal:Math.round(v('energy-kcal')),prot:+v('proteins').toFixed(1),carb:+v('carbohydrates').toFixed(1),gord:+v('fat').toFixed(1)},'Dados da base Open Food Facts — confira com o rótulo antes de salvar.');
+      $('#fotoSt').textContent='';$('#bcCod').value='';
+    }catch(e){$('#fotoSt').textContent='Sem internet ou base fora do ar. Cadastre à mão.'}
+    finally{$('#bcBtn').disabled=false}
+  };
+  $('#bkSave').onclick=()=>{const blob=new Blob([window.STANDALONE.exportar()],{type:'application/json'});const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download='diario-backup-'+hojeISO()+'.json';document.body.appendChild(a);a.click();a.remove();toast('Cópia gerada')};
+  $('#bkLoad').onclick=()=>$('#bkFile').click();
+  $('#bkFile').addEventListener('change',async()=>{const f=$('#bkFile').files[0];if(!f)return;
+    try{window.STANDALONE.importar(await f.text());toast('Cópia restaurada');setTimeout(()=>location.reload(),600)}catch{toast('Arquivo inválido')}});
+}
+
+/* dados */
+function trocarDia(d){
+  dia=d;day={data:d,itens:[],agua:0,treinos:[]};garmin=null;render();
+  if(!db)return;unsubDay&&unsubDay();unsubGar&&unsubGar();
+  const timer=setTimeout(()=>banner('Não consegui carregar seus dados ainda. Verifique a internet.'),10000);
+  const kd=P('dias/'+d),kg=P('garmin/'+d);
+  unsubDay=db.doc(kd).onSnapshot(s=>{if(kd!==P('dias/'+dia))return;if(!s.metadata.fromCache){clearTimeout(timer);banner('')}
+    if(s.exists){const v=s.data();day={data:d,itens:[...(v.itens||[])].map(x=>({...x})),agua:num(v.agua),treinos:[...(v.treinos||[])].map(x=>({...x})),relogio:v.relogio?{...v.relogio}:undefined}}render()},
+    e=>{clearTimeout(timer);banner('Erro ao ler o dia ('+e.code+').')});
+  unsubGar=db.doc(kg).onSnapshot(s=>{if(kg!==P('garmin/'+dia))return;garmin=s.exists?s.data():null;render()},()=>{});
+}
+(async()=>{
+  render();renderProdutos();preencherCfg();
+  [db,sample]=await Promise.all([claude.use('db'),claude.use('sample')]);
+  if(sample){try{const lim=await sample.limits();if(!lim.images)$('#fotoBtn').hidden=true}catch{}$('#anaBtn').hidden=false}else $('#fotoBtn').hidden=true;
+  if(!db){banner('Abra este app logado no claude.ai para salvar os dados. Sem isso, nada fica gravado.');return}
+  db.collection('perfis').onSnapshot(s=>{perfis=s.docs.map(x=>({id:x.id,nome:x.data().nome||x.id}));if(perfis.length&&!perfis.some(x=>x.id===perfil))trocarPerfil(perfis[0].id);renderPerfis()},()=>{});
+  db.collection('produtos').onSnapshot(s=>{produtos=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.nome).localeCompare(b.nome,'pt-BR'));renderProdutos();if($('#sheet').classList.contains('on'))renderSheet()},()=>{});
+  ligarPerfil();
+})();
+}
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+</body></html>
