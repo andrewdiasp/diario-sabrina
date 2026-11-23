@@ -236,7 +236,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
     <div class="card">
       <h2>Evolução</h2>
       <label style="margin-top:8px">Exercício<select id="evEx"></select></label>
-      <div class="grid2" style="margin-top:6px;grid-template-columns:1fr 90px"><label>Local<select id="evLocal"></select></label><label>Unidade<select id="evUn"><option>kg</option><option>lb</option></select></label></div>
+      <div class="grid2" style="margin-top:6px;grid-template-columns:1fr 90px"><label>Local<select id="evLocal"></select></label><label>Unidade<select id="evUn"><option>kg</option><option>lb</option></select></label></div><label id="evMetBox" hidden style="margin-top:6px">Métrica<select id="evMet"></select></label>
       <div class="fig" id="evFig"></div>
       <div class="note" id="evNote"></div>
     </div>
@@ -578,7 +578,23 @@ const REFS=[['cafe','Café da manhã'],['almoco','Almoço'],['lanche','Lanche da
 const DEF_CFG={nome:'',contexto:'',meta_kcal:0,meta_agua:3000,meta_peso:0,horarios:{cafe:'07:00',almoco:'12:00',lanche:'17:00',jantar:'20:00'}};
 const TIPOS=['Musculação','HYROX','Futevôlei','Corrida','Bike','Funcional','Outro'];
 const ESPORTES=['Futevôlei','Beach tennis','Vôlei de praia','Futebol','Corrida','Caminhada','Bike','Spinning','Natação','CrossFit','Funcional','Yoga','Pilates','Muay thai','Jiu-jitsu','Boxe','Tênis','Padel','Dança','Alongamento'];
-let espCustom=[];
+let espCustom=[],espMet={};
+/* métricas por esporte: [rótulo, tipo de campo, opções] */
+const METR={
+ dur:['Duração (min)','num'],modo:['Treino ou jogo','sel',['Treino','Jogo','Torneio']],jogos:['Jogos / partidas','num'],vitorias:['Vitórias','num'],placar:['Placar / sets','txt'],
+ gols:['Gols','num'],dist_km:['Distância (km)','dec'],dist_m:['Distância (m)','num'],tempo:['Tempo total (h:mm:ss)','tempo'],elevacao:['Subida acumulada (m)','num'],
+ passos:['Passos','num'],estilo:['Estilo','sel',['Livre (crawl)','Costas','Peito','Borboleta','Misto']],voltas:['Piscinas / voltas','num'],rounds:['Rounds','num'],lutas:['Lutas (rolas)','num'],
+ resultado:['Resultado (tempo, reps, rounds)','txt'],fc_media:['FC média (bpm)','num'],intensidade:['Intensidade','sel',['Leve','Moderada','Forte','Máxima']],rpe:['Esforço percebido (1 a 10)','num'],
+ dor:['Dor no joelho / corpo (0 a 10)','num'],carga:['Carga (kg)','dec'],obs:['Observação','txt']};
+const ESP_MET={'Futevôlei':['modo','jogos','vitorias','intensidade','dor'],'Beach tennis':['modo','jogos','vitorias','placar','intensidade','dor'],'Vôlei de praia':['modo','jogos','vitorias','placar','intensidade','dor'],
+ 'Futebol':['modo','gols','intensidade','dor'],'Corrida':['dist_km','tempo','elevacao','fc_media','dor'],'Caminhada':['dist_km','tempo','passos'],'Bike':['dist_km','tempo','elevacao','fc_media'],
+ 'Spinning':['dur','intensidade','fc_media'],'Natação':['dist_m','tempo','estilo','voltas'],'CrossFit':['resultado','rounds','rpe','dor'],'Funcional':['intensidade','rpe'],
+ 'Yoga':['intensidade'],'Pilates':['intensidade'],'Alongamento':['intensidade'],'Dança':['intensidade'],'Muay thai':['rounds','intensidade'],'Boxe':['rounds','intensidade'],
+ 'Jiu-jitsu':['lutas','intensidade'],'Tênis':['modo','jogos','vitorias','placar','intensidade'],'Padel':['modo','jogos','vitorias','placar','intensidade']};
+const metricasDe=n=>espMet[n]||ESP_MET[n]||['intensidade','rpe','obs'];
+const ritmo=e=>{const m=e.m||{};if(num(m.dist_km)&&num(m.tempo))return seg2mmss(num(m.tempo)/num(m.dist_km))+' /km';if(num(m.dist_m)&&num(m.tempo))return seg2mmss(num(m.tempo)/num(m.dist_m)*100)+' /100 m';return ''};
+const valMet=(k,v)=>{const d=METR[k];if(!d||v===''||v==null)return '';return d[1]==='tempo'?seg2hms(v):d[1]==='dec'?fmt(v,2):d[1]==='num'?fmt(v):String(v)};
+const seg2hms=s=>{s=Math.round(num(s));if(!s)return '';const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`};
 const HYROX=[['Corrida',1000],['SkiErg',1000],['Corrida',1000],['Sled push',50],['Corrida',1000],['Sled pull',50],['Corrida',1000],['Burpee broad jump',80],['Corrida',1000],['Remo',1000],['Corrida',1000],['Farmers carry',200],['Corrida',1000],['Sandbag lunges',100],['Corrida',1000],['Wall balls (reps)',100]];
 const EX_SUG=['Supino reto','Supino inclinado','Crucifixo','Agachamento livre','Leg press','Cadeira extensora','Mesa flexora','Levantamento terra','Stiff','Afundo','Panturrilha','Remada curvada','Remada baixa','Puxada frontal','Barra fixa','Desenvolvimento','Elevação lateral','Rosca direta','Rosca martelo','Tríceps corda','Tríceps testa','Abdominal','Prancha','Wall sit','Spanish squat','Step-down','Ponte de glúteo','Abdução com elástico',...new Set(HYROX.map(h=>h[0])),'Bike','Air bike','Kettlebell swing','Thruster'];
 const MED=[['peso','Peso','kg',1],['gordura','% gordura','%',1],['magra','Massa magra','kg',1],['cintura','Cintura','cm',1],['abdomen','Abdômen','cm',1],['quadril','Quadril','cm',1],['peito','Peito','cm',1],['braco','Braço','cm',1],['coxa','Coxa','cm',1]];
@@ -827,16 +843,19 @@ function renderAdd(){
 }
 function addEsporte(nome){
   if(!tr.exs.length&&!(tr.blocos||[]).length){tr.tipo=nome;renderTipos();$('#tTipo').value=nome;if(!$('#tNome').value)$('#tNome').value=tr.nome=''}
-  tr.exs.push({nome,tipo:'cardio',dist:'',tempo:'',kg:''});renderEx();fecharAdd();toast(nome+' adicionado — preencha tempo, distância ou o que fizer sentido')}
+  tr.exs.push({nome,tipo:'esporte',m:{}});renderEx();fecharAdd();toast(nome+' adicionado')}
 $('#addMenuBtn').onclick=abrirAdd;$('#addClose').onclick=fecharAdd;$('#addSheet').addEventListener('click',e=>{if(e.target.id==='addSheet')fecharAdd()});
 $('#addBusca').addEventListener('input',()=>{$('#espCriar').innerHTML='';renderAdd()});
-$('#espNovoBtn').onclick=()=>{$('#espCriar').innerHTML=`<div class="prev" style="margin-top:10px"><b>Novo esporte</b><div class="grid2" style="grid-template-columns:1fr auto;align-items:end;margin-top:6px"><label>Nome<input id="espNome" placeholder="Ex.: Remo havaiano" value="${esc($('#addBusca').value)}"></label><button class="pri" id="espCriarOk">Criar</button></div></div>`;$('#espNome').focus()};
+$('#espNovoBtn').onclick=()=>{$('#espCriar').innerHTML=`<div class="prev" style="margin-top:10px"><b>Novo esporte</b><label style="margin-top:6px">Nome<input id="espNome" placeholder="Ex.: Remo havaiano" value="${esc($('#addBusca').value)}"></label>
+  <p class="note" style="margin:8px 0 4px">O que você quer anotar nesse esporte?</p><div class="grid2" style="gap:4px 10px">${Object.entries(METR).map(([k,d])=>`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px"><input type="checkbox" data-espmet="${k}" style="width:22px;min-height:22px;flex:none" ${['intensidade','rpe'].includes(k)?'checked':''}>${esc(d[0])}</label>`).join('')}</div>
+  <div class="btns"><button class="pri" id="espCriarOk">Criar esporte</button></div></div>`;$('#espNome').focus()};
 $('#addSheet').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const D=b.dataset;
   if(D.addop){fecharAdd();({forca:()=>$('#exAddF').click(),cardio:()=>$('#exAddC').click(),bloco:()=>$('#blAdd').click(),aula:()=>$('#aulaBtn').click(),simulado:()=>$('#exHyrox').click()})[D.addop]();return}
   if(D.addesp){addEsporte(D.addesp);return}
-  if(D.esprm){espCustom=espCustom.filter(x=>x!==D.esprm);gravar(P('extras/esportes'),{lista:espCustom});renderAdd();renderTipos();return}
+  if(D.esprm){espCustom=espCustom.filter(x=>x!==D.esprm);const em={...espMet};delete em[D.esprm];espMet=em;gravar(P('extras/esportes'),{lista:espCustom,metricas:espMet});renderAdd();renderTipos();return}
   if(b.id==='espCriarOk'){let n=$('#espNome').value.trim().replace(/\s+/g,' ');if(!n){toast('Digite o nome do esporte');return}n=n[0].toUpperCase()+n.slice(1);
-    if(!espCustom.includes(n)&&!ESPORTES.includes(n)){espCustom=[...espCustom,n];gravar(P('extras/esportes'),{lista:espCustom})}renderTipos();addEsporte(n)}});
+    const mets=[...document.querySelectorAll('[data-espmet]:checked')].map(x=>x.dataset.espmet);if(!mets.length){toast('Escolha pelo menos uma métrica');return}
+    if(!espCustom.includes(n)&&!ESPORTES.includes(n))espCustom=[...espCustom,n];espMet={...espMet,[n]:mets};gravar(P('extras/esportes'),{lista:espCustom,metricas:espMet});renderTipos();addEsporte(n)}});
 const locais=()=>[...new Set(treinos.map(t=>String(t.local||'').trim()).filter(Boolean))];
 function novoTreino(data){tr={id:null,data:data||hojeISO(),tipo:'Musculação',nome:'',duracao:'',kcal:'',notas:'',exs:[],blocos:[],local:(treinos.find(t=>t.local)||{}).local||''};preencherTreino()}
 function abrirTreino(x){if(!x)return;tr=structuredClone(x);tr.exs=tr.exs||[];tr.blocos=tr.blocos||[];preencherTreino();$('#trEditor').scrollIntoView({block:'start'})}
@@ -853,13 +872,18 @@ function ultimaVez(nome,antesDe){
   return null;
 }
 function resumoEx(e){
+  if(e.tipo==='esporte'){const m=e.m||{};return [...metricasDe(e.nome).filter(k=>m[k]!==''&&m[k]!=null).map(k=>METR[k][0].replace(/ \(.*\)/,'')+': '+valMet(k,m[k])),ritmo(e)].filter(Boolean).join(' · ')}
   if(e.tipo==='cardio')return [e.dist?fmt(e.dist)+(/reps/i.test(e.nome)?' reps':' m'):'',e.tempo?seg2mmss(e.tempo):'',fmtCarga(e)].filter(Boolean).join(' · ');
   return (e.series||[]).filter(s=>s.reps||s.kg).map(s=>`${fmt(s.reps)}×${fmtCarga(s)||'—'}`).join(', ');
 }
 function renderEx(){
   $('#exList').innerHTML=tr.exs.map((e,i)=>{
     const u=ultimaVez(e.nome,tr.data);const ult=u?`<div class="note">Última vez (${dBR(u.s.data)}): ${esc(resumoEx(u.e)||'—')}</div>`:'';
-    const corpo=e.tipo==='cardio'
+    const corpo=e.tipo==='esporte'
+      ?`<div class="grid2" style="margin-top:6px">${metricasDe(e.nome).map(k=>{const d=METR[k];if(!d)return '';const v=(e.m||{})[k];
+          return `<label${d[1]==='txt'?' style="grid-column:1/-1"':''}>${esc(d[0])}${d[1]==='sel'?`<select data-ex="${i}" data-mk="${k}"><option value="">—</option>${d[2].map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select>`
+            :`<input data-ex="${i}" data-mk="${k}" ${d[1]==='txt'?'':'inputmode="decimal"'} ${d[1]==='tempo'?'placeholder="0:45:30"':''} value="${esc(v==null||v===''?'':d[1]==='tempo'?seg2hms(v):v)}">`}</label>`}).join('')}</div><div class="note" id="rit${i}">${ritmo(e)?`Ritmo: <b>${esc(ritmo(e))}</b>`:''}</div>`
+      :e.tipo==='cardio'
       ?`<div class="grid2" style="margin-top:6px"><label>${/reps/i.test(e.nome)?'Reps':'Distância (m)'}<input data-ex="${i}" data-f="dist" type="number" inputmode="numeric" value="${esc(e.dist||'')}"></label><label>Tempo (mm:ss)<input data-ex="${i}" data-f="tempo" inputmode="numeric" placeholder="4:30" value="${esc(seg2mmss(e.tempo))}"></label></div><label style="margin-top:4px">Carga<span class="cg"><input data-ex="${i}" data-f="val" type="number" inputmode="decimal" placeholder="peso" value="${esc(num(e.kg)||num(e.val)?normCarga(e).val:'')}">${selUn(`data-ex="${i}" data-f="un"`,e.un)}</span></label>`
       :(e.series||[]).map((s,j)=>`<div class="serie"><span>${j+1}ª</span><label class="sr"><input data-ex="${i}" data-s="${j}" data-f="reps" type="number" inputmode="numeric" placeholder="reps" aria-label="Repetições" value="${esc(s.reps||'')}"></label><label><input data-ex="${i}" data-s="${j}" data-f="val" type="number" inputmode="decimal" step="0.5" placeholder="peso" aria-label="Carga" value="${esc(num(s.kg)||num(s.val)?normCarga(s).val:'')}"></label>${selUn(`data-ex="${i}" data-s="${j}" data-f="un"`,s.un)}<button class="sm" data-srm="${i}:${j}" aria-label="Remover série">×</button></div>`).join('')
         +`<div class="btns"><button class="sm" data-sadd="${i}">+ Série</button></div>`;
@@ -868,6 +892,7 @@ function renderEx(){
 }
 $('#exList').addEventListener('input',e=>{
   const t=e.target,i=t.dataset.ex;if(i==null)return;const ex=tr.exs[+i],f=t.dataset.f;
+  if(t.dataset.mk){const k=t.dataset.mk,d=METR[k];ex.m=ex.m||{};ex.m[k]=d[1]==='tempo'?mmss2seg(t.value):(d[1]==='num'||d[1]==='dec')?(t.value===''?'':num(t.value)):t.value;const r=document.getElementById('rit'+i);if(r){const v=ritmo(ex);r.innerHTML=v?'Ritmo: <b>'+esc(v)+'</b>':''}return}
   const setC=(o,f,v)=>{if(f==='un'){o.un=v;o.val=o.val===undefined||o.val===''?normCarga(o).val:o.val}else o.val=num(v);o.kg=cargaKg(o.val,o.un)};
   if(t.dataset.s!=null){const se=ex.series[+t.dataset.s];if(f==='val'||f==='un'){setC(se,f,t.value);if(f==='un')ex.series.forEach(x=>{if(x!==se){x.val=normCarga(x).val;x.un=t.value;x.kg=cargaKg(x.val,x.un)}});if(f==='un')renderEx()}else se[f]=num(t.value)}
   else if(f==='nome')ex.nome=t.value;else if(f==='tempo')ex.tempo=mmss2seg(t.value);else if(f==='val'||f==='un')setC(ex,f,t.value);else ex[f]=num(t.value);
@@ -982,7 +1007,7 @@ $('#tModelo').onchange=()=>{const m=modelosTr.find(x=>x.id===$('#tModelo').value
   tr.exs=(m.exs||[]).map(e=>{if(ultimaVez(e.nome,tr.data))return exComUltima(e.nome,e.tipo);return e.tipo==='cardio'?{nome:e.nome,tipo:'cardio',dist:e.dist||'',tempo:'',kg:e.kg||''}:{nome:e.nome,tipo:'forca',series:(e.series&&e.series.length?e.series:[{},{},{}]).map(x=>({reps:x.reps||'',kg:x.kg||''}))}});
   tr.blocos=structuredClone(m.blocos||[]);tr.circuito_rounds=m.circuito_rounds||'';tr.tipo=m.tipo||tr.tipo;tr.nome=m.nome;$('#tTipo').value=tr.tipo;$('#tNome').value=tr.nome;renderEx();renderBl();toast('Modelo carregado (com as cargas da última vez, quando houver)')};
 function lerCabecalho(){tr.blocos=tr.blocos||[];tr.local=$('#tLocal').value.trim();tr.data=$('#tData').value||hojeISO();tr.tipo=$('#tTipo').value;tr.nome=$('#tNome').value.trim();tr.duracao=num($('#tDur').value)||'';tr.kcal=num($('#tK').value)||'';tr.notas=$('#tNotas').value.trim()}
-const limparExs=exs=>exs.filter(e=>String(e.nome).trim()).map(e=>e.tipo==='cardio'?{nome:e.nome.trim(),tipo:'cardio',dist:num(e.dist),tempo:num(e.tempo),...normCarga(e)}:{nome:e.nome.trim(),tipo:'forca',series:(e.series||[]).filter(s=>num(s.reps)||num(s.kg)||num(s.val)).map(s=>({reps:num(s.reps),...normCarga(s)}))});
+const limparExs=exs=>exs.filter(e=>String(e.nome).trim()).map(e=>e.tipo==='esporte'?{nome:e.nome.trim(),tipo:'esporte',m:Object.fromEntries(Object.entries(e.m||{}).filter(([k,v])=>v!==''&&v!=null))}:e.tipo==='cardio'?{nome:e.nome.trim(),tipo:'cardio',dist:num(e.dist),tempo:num(e.tempo),...normCarga(e)}:{nome:e.nome.trim(),tipo:'forca',series:(e.series||[]).filter(s=>num(s.reps)||num(s.kg)||num(s.val)).map(s=>({reps:num(s.reps),...normCarga(s)}))});
 $('#tSalvar').onclick=()=>{
   lerCabecalho();const body={data:tr.data,tipo:tr.tipo,nome:tr.nome,duracao:tr.duracao,kcal:tr.kcal,notas:tr.notas,exs:limparExs(tr.exs),blocos:limparBlocos(tr.blocos),atualizado:new Date().toISOString()};
   if(tr.garmin_ref)body.garmin_ref=tr.garmin_ref;if(num(tr.circuito_rounds))body.circuito_rounds=num(tr.circuito_rounds);if(tr.local)body.local=tr.local;
@@ -1033,6 +1058,19 @@ function renderTreino(){
 function desenharEvolucao(){
   const n=$('#evEx').value;if(!$('#evEx').dataset.unSet)$('#evUn').value=unDe(n);
   const pts=[],loc=$('#evLocal').value,un=$('#evUn').value,cv=k=>un==='lb'?k/LB:k;let tipo='forca';
+  const ses=[...treinos].reverse().filter(s=>!loc||s.local===loc),espE=ses.flatMap(s=>exsDe(s).filter(e=>String(e.nome).trim()===n&&e.tipo==='esporte').map(e=>({s,e})));
+  $('#evMetBox').hidden=!espE.length;$('#evUn').closest('label').hidden=!!espE.length;
+  if(espE.length){
+    const nums=metricasDe(n).filter(k=>['num','dec','tempo'].includes((METR[k]||[])[1])&&espE.some(o=>num((o.e.m||{})[k])));
+    if(espE.some(o=>ritmo(o.e)))nums.push('_ritmo');
+    const atual=$('#evMet').value;$('#evMet').innerHTML=nums.map(k=>`<option value="${k}">${k==='_ritmo'?'Ritmo':esc(METR[k][0])}</option>`).join('')||'<option value="">Sem números ainda</option>';if(nums.includes(atual))$('#evMet').value=atual;
+    const k=$('#evMet').value,porD={};
+    espE.forEach(({s,e})=>{const m=e.m||{};let y=k==='_ritmo'?(num(m.dist_km)&&num(m.tempo)?num(m.tempo)/num(m.dist_km):num(m.dist_m)&&num(m.tempo)?num(m.tempo)/num(m.dist_m)*100:0):num(m[k]);if(y)porD[s.data]=k==='_ritmo'?Math.min(porD[s.data]||1e9,y):(porD[s.data]||0)+y});
+    const p2=Object.entries(porD).map(([x,y])=>({x,y})).sort((a,b)=>a.x.localeCompare(b.x));const tm=k==='_ritmo'||(METR[k]||[])[1]==='tempo';
+    lineChart($('#evFig'),p2,{fy:v=>tm?seg2hms(v):fmt(v,1),label:n});
+    $('#evNote').textContent=p2.length?(k==='_ritmo'?'Ritmo em cada treino — quanto mais baixo, mais rápido.':'Valor em cada dia de '+n+'.')+(p2.length>1?` Primeiro: ${tm?seg2hms(p2[0].y):fmt(p2[0].y,1)} → último: ${tm?seg2hms(p2[p2.length-1].y):fmt(p2[p2.length-1].y,1)}.`:''):'Preencha os números deste esporte para ver a evolução.';
+    return;
+  }
   const melhorLocal={};
   [...treinos].reverse().filter(s=>!loc||s.local===loc).forEach(s=>{const es=exsDe(s).filter(e=>String(e.nome).trim()===n);if(!es.length)return;tipo=es[0].tipo;
     if(tipo==='cardio'){const ts=es.map(e=>num(e.tempo)).filter(Boolean);if(ts.length)pts.push({x:s.data,y:Math.min(...ts)})}
@@ -1044,7 +1082,7 @@ function desenharEvolucao(){
     const ml=Object.entries(melhorLocal);
     $('#evNote').textContent=pts.length?'Maior carga em cada treino'+(loc?' em '+loc:'')+'.'+(vol.length>1?` Volume (reps × kg): ${fmt(vol[0])} → ${fmt(vol[vol.length-1])}.`:'')+(!loc&&ml.length>1?' Melhor marca por local: '+ml.map(([l,v])=>`${l} ${fmt(cv(v.kg),1)} ${un} (${dBR(v.d)})`).join(' · ')+'.':''):''}
 }
-$('#evEx').onchange=()=>{delete $('#evEx').dataset.unSet;desenharEvolucao()};$('#evLocal').onchange=desenharEvolucao;$('#evUn').onchange=()=>{$('#evEx').dataset.unSet='1';desenharEvolucao()};
+$('#evEx').onchange=()=>{delete $('#evEx').dataset.unSet;desenharEvolucao()};$('#evLocal').onchange=desenharEvolucao;$('#evMet').onchange=desenharEvolucao;$('#evUn').onchange=()=>{$('#evEx').dataset.unSet='1';desenharEvolucao()};
 
 /* importar treino de texto / arquivo */
 let impLidos=[];
@@ -1297,7 +1335,7 @@ function ligarPerfil(){
   sub(db.collection(P('modelos_treino')),s=>{modelosTr=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.nome).localeCompare(b.nome,'pt-BR'));if(tr)preencherTreinoModelos()});
   sub(db.collection(P('medidas')),s=>{medidas=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>b.data.localeCompare(a.data));if(!$('#v-corpo').hidden)renderCorpo()});
   sub(db.collection(P('garmin')).orderBy('data','desc').limit(70),s=>{garminHist=s.docs.map(x=>({data:x.id,...x.data()}));if(!$('#v-treino').hidden)renderTreino()});
-  sub(db.doc(P('extras/esportes')),s=>{espCustom=s.exists?(s.data().lista||[]):[];renderTipos();if($('#addSheet').classList.contains('on'))renderAdd()});
+  sub(db.doc(P('extras/esportes')),s=>{espCustom=s.exists?(s.data().lista||[]):[];espMet=s.exists?(s.data().metricas||{}):{};renderTipos();if($('#addSheet').classList.contains('on'))renderAdd()});
   sub(db.doc(P('extras/exercicios')),s=>{exCustom=s.exists?(s.data().lista||[]):[];if($('#exSheet').classList.contains('on'))renderExPicker()});
   sub(db.doc(P('dieta/atual')),s=>{dieta=s.exists?s.data():null;renderDieta()});
   trocarDia(hojeISO());
