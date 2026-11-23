@@ -1,6 +1,6 @@
-/* Preencha com os dados do Supabase e do Cloudflare Worker. Vazio = app funciona só no aparelho. */
+/* Dados públicos do Supabase e do Cloudflare Worker (nenhuma chave secreta aqui). */
 window.DIARIO_CFG={
-  supabaseUrl:'',      // ex.: https://abcd1234.supabase.co
-  supabaseAnon:'',     // chave "anon public" do Supabase (pode ficar no site)
-  aiUrl:''             // ex.: https://diario-ia.SEUNOME.workers.dev
+  supabaseUrl:'https://kjczgyqniwakbookndlu.supabase.co',
+  supabaseAnon:'sb_publishable_CJwwC_M3AK7BEvrNFIcHpw_JV-sSKTf',
+  aiUrl:''             // preencher com o endereço do Worker (passo C)
 };
