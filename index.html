@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Diário">
-<meta name="theme-color" content="#4a1658">
+<meta name="theme-color" content="#8db600">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
@@ -16,9 +16,9 @@
 /* VOICE: prático, direto, de bolso — usado várias vezes por dia
    IDEA: a tabela "Informação Nutricional" do rótulo, aplicada ao seu dia, ao treino e ao corpo
    PICTURE: o rótulo do dia no topo; gráficos de linha finos nas abas Treino e Corpo
-   COLOUR/TYPE: papel branco e tinta preta com fios grossos; açaí como acento; azul água; Archivo
+   COLOUR/TYPE: papel branco e tinta preta com fios grossos; verde apple como acento; azul água; Archivo
    LAYOUT: coluna única de celular, abas fixas embaixo */
-:root{color-scheme:light dark;--bg:light-dark(#f3f1ee,#121014);--card:light-dark(#fff,#1c1920);--ink:light-dark(#121012,#f1edf3);--mut:light-dark(#5f5a62,#a8a1ad);--soft:light-dark(#e7e3e9,#2d2932);--acai:light-dark(#4a1658,#cf98e3);--agua:light-dark(#1764c4,#72b2ff);--alerta:light-dark(#c8231b,#ff6b5f);--ok:light-dark(#1d6b3a,#6fd49a)}
+:root{color-scheme:light dark;--bg:light-dark(#f3f6ea,#11140c);--card:light-dark(#fff,#1b1f14);--ink:light-dark(#121012,#f1edf3);--mut:light-dark(#5f5a62,#a8a1ad);--soft:light-dark(#e3e9d4,#2b3220);--acai:light-dark(#8db600,#9fcf1a);--acai-t:light-dark(#4d6b00,#b9e04a);--acai-on:#172200;--agua:light-dark(#1764c4,#72b2ff);--alerta:light-dark(#c8231b,#ff6b5f);--ok:light-dark(#1d6b3a,#6fd49a)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,system-ui,sans-serif;overflow-x:clip;padding-bottom:88px}
@@ -28,8 +28,8 @@ h2{font-size:20px}h3{font-size:17px}
 button,input,select,textarea{font:inherit;color:inherit}
 button{min-height:44px;border:2px solid var(--ink);background:var(--card);border-radius:10px;padding:0 14px;font-weight:600;cursor:pointer}
 button:disabled{opacity:.5}
-button.pri{background:var(--acai);border-color:var(--acai);color:light-dark(#fff,#1a0f1e)}
-button.lnk{border:0;background:none;padding:0 6px;color:var(--acai);text-decoration:underline}
+button.pri{background:var(--acai);border-color:var(--acai-t);color:light-dark(#fff,#1a0f1e)}
+button.lnk{border:0;background:none;padding:0 6px;color:var(--acai-t);text-decoration:underline}
 button.sm{min-height:36px;min-width:40px;padding:0 8px;border-width:1.5px}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--agua);outline-offset:2px}
 input,select,textarea{min-height:44px;border:1.5px solid var(--mut);border-radius:8px;background:var(--card);padding:0 10px;font-size:16px;width:100%}
@@ -65,9 +65,9 @@ label{font-size:13px;color:var(--mut);display:grid;gap:3px}
 .week i{width:70%;background:var(--acai);border-radius:4px 4px 0 0;min-height:2px}
 .week i.over{background:var(--alerta)}
 .week .meta{position:absolute;left:0;right:0;border-top:2px dashed var(--ink);height:0}
-nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:2px solid var(--ink);display:flex;justify-content:center;gap:2px;padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:4}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:3px solid var(--acai);display:flex;justify-content:center;gap:2px;padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:4}
 nav button{flex:1;max-width:130px;border:0;background:none;padding:0 4px;font-size:15px}
-nav button[aria-current=page]{background:var(--ink);color:var(--card)}
+nav button[aria-current=page]{background:var(--acai);color:var(--acai-on)}
 .sheet{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;justify-content:center;z-index:5}
 .sheet.on{display:flex}
 .sheet>div{background:var(--bg);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
@@ -102,7 +102,7 @@ nav button[aria-current=page]{background:var(--ink);color:var(--card)}
 .prev{border-left:4px solid var(--acai);padding-left:10px;margin-top:8px}
 button.exnome{flex:1;text-align:left;border-width:1.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 button.exnome.vazio{color:var(--mut);font-weight:600}
-.lista{position:relative;max-height:48vh;overflow-y:auto;overscroll-behavior:contain;margin-top:8px;padding-right:6px;border-top:1px solid var(--soft);scrollbar-width:auto;scrollbar-color:var(--acai) var(--soft)}
+.lista{position:relative;max-height:48vh;overflow-y:auto;overscroll-behavior:contain;margin-top:8px;padding-right:6px;border-top:1px solid var(--soft);scrollbar-width:auto;scrollbar-color:#8db600 var(--soft)}
 .lista::-webkit-scrollbar{width:10px}.lista::-webkit-scrollbar-track{background:var(--soft);border-radius:5px}.lista::-webkit-scrollbar-thumb{background:var(--acai);border-radius:5px}
 .lista h3{font-size:14px;color:var(--mut);margin:12px 0 2px;position:sticky;top:0;background:var(--bg);padding:4px 0}
 .op{display:flex;gap:6px;align-items:center;margin-top:6px}.op button:first-child{flex:1;text-align:left;border-width:1.5px;font-weight:600}
@@ -114,7 +114,7 @@ button.calbtn::after{content:" ▾";font-size:.7em}
 .cal .wd{text-align:center;font-size:12px;color:var(--mut);padding:2px 0}
 .cal button{min-height:52px;padding:2px 0;border:1.5px solid var(--soft);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-weight:700;font-size:15px}
 .cal button small{font-size:10px;font-weight:600;color:var(--mut);line-height:1}
-.cal button.ok{border-color:var(--acai)}.cal button.ok small{color:var(--acai)}
+.cal button.ok{border-color:var(--acai-t)}.cal button.ok small{color:var(--acai-t)}
 .cal button.over{border-color:var(--alerta)}.cal button.over small{color:var(--alerta)}
 .cal button.hoje{background:var(--soft)}.cal button.sel{background:var(--ink);color:var(--card);border-color:var(--ink)}.cal button.sel small{color:var(--card)}
 .cal button i{width:6px;height:6px;border-radius:3px;background:var(--agua)}
