@@ -488,7 +488,7 @@ async function enviar(){
     for(let i=0;i<sets.length;i+=200){const lote=sets.slice(i,i+200);const {error}=await sb.from('docs').upsert(lote.map(p=>({path:p,data:loc[p],updated_at:new Date().toISOString()})),{onConflict:'user_id,path'});if(error)throw error;lote.forEach(p=>{if(pend[p]==='set')delete pend[p]})}
     for(let i=0;i<dels.length;i+=200){const lote=dels.slice(i,i+200);const {error}=await sb.from('docs').delete().in('path',lote);if(error)throw error;lote.forEach(p=>delete pend[p])}
     salvaPend();estado('Sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){estado('Sem conexão com a nuvem — salvo no aparelho, envio depois.')}finally{enviando=false;if(Object.keys(pend).length&&!timer)timer=setTimeout(()=>{timer=null;enviar()},30000)}
+  }catch(e){const perm=e&&(e.code==='42501'||/permission|row-level/i.test(e.message||''));estado(perm?'Erro de permissão no banco da nuvem — os dados estão só neste aparelho.':'Sem conexão com a nuvem — salvo no aparelho, envio depois.');if(perm){const b=document.getElementById('banner');if(b){b.textContent='Os dados não estão subindo para a nuvem (permissão do banco). Ficam salvos só neste aparelho até corrigir.';b.style.display='block'}}}finally{enviando=false;if(Object.keys(pend).length&&!timer)timer=setTimeout(()=>{timer=null;enviar()},30000)}
 }
 window.__nuvem={escrita:(p,op)=>{pend[p]=op;salvaPend();clearTimeout(timer);timer=setTimeout(()=>{timer=null;enviar()},800)}};
 
@@ -510,7 +510,7 @@ function montaSample(){
 }
 async function entrar(user){
   usuario=user;if(CFG.aiUrl){window.__sample=montaSample();window.STANDALONE.ia=true}
-  try{await puxar();await enviar()}catch(e){estado('Sem conexão com a nuvem agora; usando os dados do aparelho.')}
+  try{await puxar();await enviar()}catch(e){const perm=e&&(e.code==='42501'||/permission/i.test(e.message||''));estado(perm?'Erro de permissão no banco da nuvem.':'Sem conexão com a nuvem agora; usando os dados do aparelho.');if(perm){setTimeout(()=>{const b=document.getElementById('banner');if(b){b.textContent='Os dados não estão subindo para a nuvem (permissão do banco). Ficam salvos só neste aparelho até corrigir.';b.style.display='block'}},1500)}}
   libera();
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')puxar().then(enviar).catch(()=>{})});
   window.addEventListener('online',()=>enviar());

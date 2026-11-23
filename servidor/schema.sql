@@ -15,3 +15,6 @@ create policy "le os proprios" on public.docs for select using (auth.uid() = use
 create policy "cria os proprios" on public.docs for insert with check (auth.uid() = user_id);
 create policy "altera os proprios" on public.docs for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "apaga os proprios" on public.docs for delete using (auth.uid() = user_id);
+
+-- Permissões da tabela para usuários logados (projetos novos do Supabase não liberam sozinho)
+grant select, insert, update, delete on table public.docs to authenticated;
