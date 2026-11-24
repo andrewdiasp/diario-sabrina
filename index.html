@@ -625,9 +625,14 @@ function loginTela(){
 }
 async function puxar(primeira){
   const linhas=[];for(let de=0;;de+=1000){const {data,error}=await sb.from('docs').select('path,data').range(de,de+999);if(error)throw error;linhas.push(...data);if(data.length<1000)break}
-  const nuvem=new Map(linhas.map(r=>[r.path,r.data])),loc=L.get(),jaSync=localStorage.getItem(SYNC)===usuario.id;
+  const nuvem=new Map(linhas.map(r=>[r.path,r.data])),loc={...L.get()},jaSync=localStorage.getItem(SYNC)===usuario.id;
+  if(!jaSync){/* primeira vez desta conta neste aparelho: só leva os dados locais se a pessoa confirmar */
+    const soLocal=Object.keys(loc).filter(p=>!nuvem.has(p)&&/^perfis\//.test(p));
+    if(soLocal.length){const nomes=[...new Set(soLocal.map(p=>p.split('/')[1]))].map(id=>(loc['perfis/'+id]||{}).nome||id).join(', ');
+      if(!confirm('Este aparelho tem um diário salvo ('+nomes+'). Ele é seu e deve ir para a conta '+usuario.email+'?\n\nOK = levar para esta conta\nCancelar = apagar deste aparelho e usar só os dados da conta')){L.limpar();pend={}}}}
+  const loc2=L.get();
   for(const [p,d] of nuvem)if(!pend[p])L.put(p,d);
-  for(const p of Object.keys(loc))if(!nuvem.has(p)&&!pend[p]){if(jaSync)L.del(p);else pend[p]='set'}
+  for(const p of Object.keys(loc2))if(!nuvem.has(p)&&!pend[p]){if(jaSync)L.del(p);else pend[p]='set'}
   salvaPend();L.salvar();try{localStorage.setItem(SYNC,usuario.id)}catch{}
 }
 async function enviar(){
@@ -1914,6 +1919,9 @@ window.contaRender=async function(){const S=SOC();if(!S){$('#aj-conta').innerHTM
     ${campo('ctNome','Nome que aparece no feed',pf.nome)}
     <p class="note" style="margin:0">Código de amigo: <b>${esc(pf.codigo||'—')}</b> · E-mail: ${esc(S.email||'')}</p>
     <div class="btns" style="margin-top:0"><button class="pri" id="ctPfOk">Salvar perfil</button></div></div>
+  <div class="card" style="display:grid;gap:10px"><h2>Diários nesta conta</h2>
+    <p class="note" style="margin:0">Conta: <b>${esc(S.email||'')}</b>. Normalmente há só um diário — o seu. Se aparecer o de outra pessoa, foi copiado de um aparelho que ela usou; apague daqui (o dela continua na conta dela).</p>
+    <div id="ctPerfis"></div></div>
   <div class="card" style="display:grid;gap:10px"><h2>Trocar senha</h2>
     <div class="grid2"><label>Nova senha<input id="ctS1" type="password" autocomplete="new-password"></label><label>Repita<input id="ctS2" type="password" autocomplete="new-password"></label></div>
     <div class="btns" style="margin-top:0"><button id="ctSenhaOk">Trocar senha</button></div><div class="note" id="ctSenhaSt"></div></div>
@@ -1924,7 +1932,10 @@ window.contaRender=async function(){const S=SOC();if(!S){$('#aj-conta').innerHTM
     <div class="grid2" style="grid-template-columns:1fr 2fr">${campo('ctCep','CEP',d.cep,'inputmode="numeric" maxlength="9"')}${campo('ctRua','Rua',d.rua)}</div>
     <div class="grid3">${campo('ctNum','Número',d.numero)}${campo('ctComp','Complemento',d.complemento)}${campo('ctBairro','Bairro',d.bairro)}</div>
     <div class="grid2" style="grid-template-columns:2fr 1fr">${campo('ctCid','Cidade',d.cidade)}${campo('ctUf','UF',d.uf,'maxlength="2"')}</div>
-    <div class="note" id="ctSt"></div><div class="btns" style="margin-top:0"><button class="pri" id="ctDadosOk">Salvar dados</button></div></div>`;imgsEm($('#aj-conta'))};
+    <div class="note" id="ctSt"></div><div class="btns" style="margin-top:0"><button class="pri" id="ctDadosOk">Salvar dados</button></div></div>`;renderCtPerfis();imgsEm($('#aj-conta'))};
+function renderCtPerfis(){const b=$('#ctPerfis');if(!b)return;const loc=window.__local?window.__local.get():{},cont=id=>Object.keys(loc).filter(k=>k.startsWith('perfis/'+id+'/')).length;
+  const ids=[...new Set([...perfis.map(x=>x.id),...Object.keys(loc).filter(k=>/^perfis\/[^/]+\//.test(k)).map(k=>k.split('/')[1])])],lista=ids.map(id=>perfis.find(x=>x.id===id)||{id,nome:'Diário sem nome ('+id+')'});
+  b.innerHTML=lista.map(x=>`<div class="op" style="align-items:center"><span style="flex:1"><b>${esc(x.nome)}</b> <span class="mut">${cont(x.id)} registros${x.id===perfil?' · em uso':''}</span></span>${x.id===perfil?'':`<button class="sm" data-ctusar="${esc(x.id)}">Usar</button><button class="sm" data-ctapaga="${esc(x.id)}">Apagar</button>`}</div>`).join('')||'<div class="empty">Nenhum diário ainda.</div>'}
 $('#aj-conta').addEventListener('input',e=>{if(e.target.id==='ctCpf')e.target.value=cpfFmt(e.target.value)});
 $('#aj-conta').addEventListener('change',async e=>{
   if(e.target.id==='ctCep'){const c=e.target.value.replace(/\D/g,'');if(c.length!==8)return;try{const j=await (await fetch('https://viacep.com.br/ws/'+c+'/json/')).json();if(!j.erro){$('#ctRua').value=j.logradouro||'';$('#ctBairro').value=j.bairro||'';$('#ctCid').value=j.localidade||'';$('#ctUf').value=j.uf||'';$('#ctNum').focus()}}catch{}}
@@ -1932,6 +1943,11 @@ $('#aj-conta').addEventListener('change',async e=>{
 $('#aj-conta').addEventListener('click',async e=>{const id=e.target.id,S=SOC();if(!S)return;
   try{
   if(id==='ctFotoBtn'){$('#ctFoto').click();return}
+  const D=e.target.dataset;
+  if(D.ctusar){trocarPerfil(D.ctusar);renderCtPerfis();toast('Usando o diário de '+(perfis.find(x=>x.id===D.ctusar)||{}).nome);return}
+  if(D.ctapaga){if(D.ok!=='1'){e.target.dataset.ok='1';e.target.textContent='Toque de novo: apaga tudo';return}
+    const loc=window.__local?window.__local.get():{},ks=Object.keys(loc).filter(k=>k==='perfis/'+D.ctapaga||k.startsWith('perfis/'+D.ctapaga+'/'));
+    await Promise.all(ks.map(k=>apagar(k)));perfis=perfis.filter(x=>x.id!==D.ctapaga);renderCtPerfis();toast(ks.length+' registros apagados desta conta');return}
   if(id==='ctFotoRm'){const ant=(await S.meuPerfil()).foto;await S.salvarPerfil({foto:null});if(ant)S.apagarFotos([ant]).catch(()=>{});contaRender();return}
   if(id==='ctPfOk'){const n=$('#ctNome').value.trim();if(!n){toast('Coloque um nome');return}meuPf=await S.salvarPerfil({nome:n});toast('Perfil salvo');return}
   if(id==='ctSenhaOk'){const a=$('#ctS1').value,b=$('#ctS2').value,st=$('#ctSenhaSt');if(a.length<6){st.textContent='A senha precisa ter pelo menos 6 caracteres.';return}if(a!==b){st.textContent='As duas senhas não são iguais.';return}
