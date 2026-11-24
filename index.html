@@ -166,6 +166,11 @@ nav button{font-size:14px;padding:0 2px}
   <!-- ===================== HOJE ===================== -->
   <section id="v-hoje">
     <div class="top"><button id="prev" aria-label="Dia anterior">‹</button><h1><button id="dataTxt" class="calbtn" aria-label="Abrir calendário">Hoje</button></h1><button id="next" aria-label="Próximo dia">›</button></div>
+    <div class="card" id="bemVindo" hidden style="display:grid;gap:10px">
+      <h2>Bem-vindo ao Aurora Fitness!</h2>
+      <p class="note" style="margin:0">Como você se chama? Depois, calcule sua meta de calorias em Ajustes → Calcular dieta (ou coloque a do seu plano).</p>
+      <div style="display:flex;gap:8px"><input id="bvNome" placeholder="Seu nome" autocomplete="given-name"><button class="pri" id="bvOk">Começar</button></div>
+    </div>
     <div class="card rot">
       <div class="t"><span>Informação do dia</span><span id="metaTxt">meta</span></div>
       <div class="big"><b id="kcal">0</b><span>kcal consumidas</span></div>
@@ -1556,7 +1561,7 @@ function renderPerfis(){const l=perfis.length?perfis:[{id:perfil,nome:cfg.nome||
 function ligarPerfil(){
   subsPerfil.forEach(f=>f());subsPerfil=[];cfg=structuredClone(DEF_CFG);modelos=[];semana=[];treinos=[];modelosTr=[];medidas=[];garminHist=[];dieta=null;tr=null;editMed=null;preencherCfg();
   const sub=(ref,fn)=>subsPerfil.push(ref.onSnapshot(fn,()=>{}));
-  sub(db.doc(P()),s=>{if(s.exists){const v=s.data();cfg={...DEF_CFG,...v,horarios:{...DEF_CFG.horarios,...(v.horarios||{})}}}preencherCfg();renderPerfis();render();if(!$('#v-corpo').hidden)renderCorpo()});
+  sub(db.doc(P()),s=>{if(s.exists){const v=s.data();cfg={...DEF_CFG,...v,horarios:{...DEF_CFG.horarios,...(v.horarios||{})}}}else cfg={...DEF_CFG};preencherCfg();setTimeout(umDiarioPorConta,0);renderPerfis();render();if(!$('#v-corpo').hidden)renderCorpo()});
   sub(db.collection(P('modelos')),s=>{modelos=s.docs.map(x=>({id:x.id,...x.data()})).sort(ordMod);if($('#sheet').classList.contains('on'))renderSheet();renderDieta();renderRP()});
   sub(db.collection(P('dias')).orderBy('data','desc').limit(8),s=>{semana=s.docs.map(x=>x.data());renderSemana()});
   sub(db.collection(P('treinos')).orderBy('data','desc').limit(400),s=>{treinos=s.docs.map(x=>({id:x.id,...x.data()})).sort(ordTr);render();if(!$('#v-treino').hidden)renderTreino()});
@@ -1933,6 +1938,14 @@ window.contaRender=async function(){const S=SOC();if(!S){$('#aj-conta').innerHTM
     <div class="grid3">${campo('ctNum','Número',d.numero)}${campo('ctComp','Complemento',d.complemento)}${campo('ctBairro','Bairro',d.bairro)}</div>
     <div class="grid2" style="grid-template-columns:2fr 1fr">${campo('ctCid','Cidade',d.cidade)}${campo('ctUf','UF',d.uf,'maxlength="2"')}</div>
     <div class="note" id="ctSt"></div><div class="btns" style="margin-top:0"><button class="pri" id="ctDadosOk">Salvar dados</button></div></div>`;renderCtPerfis();imgsEm($('#aj-conta'))};
+/* app com login: cada conta tem um diário só. Apaga diários vazios que sobraram (ex.: o "Sabrina" que a versão antiga criava por padrão) e pede o nome em conta nova */
+function umDiarioPorConta(){if(!window.__local||!window.STANDALONE||!window.STANDALONE.nuvem)return;const loc=window.__local.get(),n=id=>Object.keys(loc).filter(k=>k.startsWith('perfis/'+id+'/')).length;
+  const cheio=perfis.filter(x=>n(x.id)>0);if(cheio.length&&!cheio.some(x=>x.id===perfil)){trocarPerfil(cheio[0].id);return}
+  perfis.filter(x=>x.id!==perfil&&n(x.id)===0).forEach(x=>apagar('perfis/'+x.id));
+  $('#bemVindo').hidden=!(perfis.length===0||(perfis.length===1&&n(perfil)===0&&(!cfg.nome||(cfg.nome==='Sabrina'&&!/sabrina/i.test((SOC()||{}).email||'')))))}
+$('#bvOk').onclick=async()=>{const n=$('#bvNome').value.trim();if(!n){toast('Escreva seu nome');return}
+  if(cfg.nome==='Sabrina'&&!/sabrina/i.test((SOC()||{}).email||'')){const id=perfil;perfil='eu';try{localStorage.setItem('perfil','eu')}catch{}await apagar('perfis/'+id);ligarPerfil()}
+  cfg={...cfg,nome:n};await gravar(P(),cfg);preencherCfg();$('#bemVindo').hidden=true;try{const S=SOC();if(S){const pf=await S.meuPerfil();if(!pf.nome)meuPf=await S.salvarPerfil({nome:n})}}catch{}toast('Bem-vindo, '+n+'!')};
 function renderCtPerfis(){const b=$('#ctPerfis');if(!b)return;const loc=window.__local?window.__local.get():{},cont=id=>Object.keys(loc).filter(k=>k.startsWith('perfis/'+id+'/')).length;
   const ids=[...new Set([...perfis.map(x=>x.id),...Object.keys(loc).filter(k=>/^perfis\/[^/]+\//.test(k)).map(k=>k.split('/')[1])])],lista=ids.map(id=>perfis.find(x=>x.id===id)||{id,nome:'Diário sem nome ('+id+')'});
   b.innerHTML=lista.map(x=>`<div class="op" style="align-items:center"><span style="flex:1"><b>${esc(x.nome)}</b> <span class="mut">${cont(x.id)} registros${x.id===perfil?' · em uso':''}</span></span>${x.id===perfil?'':`<button class="sm" data-ctusar="${esc(x.id)}">Usar</button><button class="sm" data-ctapaga="${esc(x.id)}">Apagar</button>`}</div>`).join('')||'<div class="empty">Nenhum diário ainda.</div>'}
@@ -2033,7 +2046,7 @@ function trocarDia(d){
   else{$('#pratoBtns').hidden=true;$('#fotoBtn').hidden=true;$('#mUpCard').hidden=true;$('#dUpBtn').hidden=true;$('#dietaCard').querySelector('.note').hidden=true;$('#impCard').hidden=true;
     if(window.STANDALONE){$('#fotoNome').closest('label').hidden=true;const c=$('#fotoBtn').closest('.card');c.querySelector('h2').textContent='Novo produto';c.querySelector('.note').textContent='Busque pelo código de barras ou cadastre copiando a tabela do rótulo.'}}
   if(!db){banner('Abra este app logado no claude.ai para salvar os dados. Sem isso, nada fica gravado.');return}
-  db.collection('perfis').onSnapshot(s=>{perfis=s.docs.map(x=>({id:x.id,nome:x.data().nome||x.id}));if(perfis.length&&!perfis.some(x=>x.id===perfil))trocarPerfil(perfis[0].id);renderPerfis()},()=>{});
+  db.collection('perfis').onSnapshot(s=>{perfis=s.docs.map(x=>({id:x.id,nome:x.data().nome||x.id}));if(perfis.length&&!perfis.some(x=>x.id===perfil))trocarPerfil(perfis[0].id);renderPerfis();umDiarioPorConta()},()=>{});
   db.collection('produtos').onSnapshot(s=>{produtos=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.nome).localeCompare(b.nome,'pt-BR'));renderProdutos();renderDieta();renderRP();if($('#sheet').classList.contains('on'))renderSheet()},()=>{});
   db.doc('conta/dados').onSnapshot(s=>{window.contaDados=s.exists?s.data():{}},()=>{});
   ligarPerfil();ligarSocial();
