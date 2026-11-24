@@ -313,6 +313,13 @@ nav button{font-size:14px;padding:0 2px}
       <div class="fig" id="mFig"></div>
       <div class="note" id="mNote"></div>
     </div>
+    <div class="card" id="bfCard" style="display:grid;gap:10px">
+      <h2>Calcular % de gordura</h2>
+      <p class="note">Método da Marinha dos EUA (Hodgdon e Beckett), só com fita métrica. Meça 3 vezes cada ponto, com a fita paralela ao chão, sem apertar; o app tira a média. Erro típico de 3 a 4 pontos para mais ou para menos: serve para acompanhar a tendência.</p>
+      <div class="grid2"><label>Sexo<select id="bfSexo"><option value="f">Feminino</option><option value="m">Masculino</option></select></label><label>Altura (cm)<input id="bfAlt" type="number" inputmode="decimal"></label></div>
+      <div id="bfCampos"></div>
+      <div id="bfRes"></div>
+    </div>
     <div class="card" id="mUpCard">
       <h2>Avaliação da nutricionista</h2>
       <p class="note">Envie o PDF ou a foto da avaliação. O Claude lê peso, gordura, massa magra e circunferências; você confere antes de salvar.</p>
@@ -328,6 +335,7 @@ nav button{font-size:14px;padding:0 2px}
         <div class="grid2"><label>% de gordura<input id="m_gordura" type="number" inputmode="decimal" step="0.1"></label><label>Massa magra (kg)<input id="m_magra" type="number" inputmode="decimal" step="0.1"></label></div>
         <div class="grid3"><label>Cintura (cm)<input id="m_cintura" type="number" inputmode="decimal"></label><label>Abdômen (cm)<input id="m_abdomen" type="number" inputmode="decimal"></label><label>Quadril (cm)<input id="m_quadril" type="number" inputmode="decimal"></label></div>
         <div class="grid3"><label>Peito (cm)<input id="m_peito" type="number" inputmode="decimal"></label><label>Braço (cm)<input id="m_braco" type="number" inputmode="decimal"></label><label>Coxa (cm)<input id="m_coxa" type="number" inputmode="decimal"></label></div>
+        <div class="grid2"><label>Pescoço (cm)<input id="m_pescoco" type="number" inputmode="decimal"></label><span></span></div>
         <label>Observação<input id="m_obs" placeholder="Ex.: balança de casa, em jejum"></label>
         <div class="btns"><button class="pri" id="mSalvar">Salvar medição</button><button id="mLimpar">Limpar</button><button id="mDel" hidden>Excluir</button></div>
       </div>
@@ -424,7 +432,7 @@ nav button{font-size:14px;padding:0 2px}
     <div id="aj-calc" hidden>
     <div class="card" style="display:grid;gap:10px">
       <h2>Calcular minha dieta</h2>
-      <p class="note">Calcula o gasto pela fórmula de Mifflin-St Jeor (a mais usada hoje) × seu nível de atividade, e daí as calorias, a água e os macros para chegar no peso desejado. Se você segue o plano de uma nutricionista, vale o plano dela.</p>
+      <p class="note">Gasto em repouso pela fórmula de Mifflin-St Jeor × fator de atividade; para perder 1 kg conta ≈ 7.700 kcal de déficit. Daí saem as calorias, a água (35 ml/kg) e os macros. Se você segue o plano de uma nutricionista, vale o plano dela.</p>
       <div class="grid2"><label>Sexo<select id="kSexo"><option value="f">Feminino</option><option value="m">Masculino</option></select></label><label>Idade<input id="kIdade" type="number" inputmode="numeric"></label></div>
       <div class="grid3"><label>Altura (cm)<input id="kAlt" type="number" inputmode="numeric"></label><label>Peso atual (kg)<input id="kPeso" type="number" inputmode="decimal" step="0.1"></label><label>Peso desejado (kg)<input id="kAlvo" type="number" inputmode="decimal" step="0.1"></label></div>
       <label>Quanto você se mexe<select id="kAtv">
@@ -772,7 +780,7 @@ function somaEsportes(){const es=tr.exs.filter(x=>x.tipo==='esporte'),k=es.reduc
 const seg2hms=s=>{s=Math.round(num(s));if(!s)return '';const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`};
 const HYROX=[['Corrida',1000],['SkiErg',1000],['Corrida',1000],['Sled push',50],['Corrida',1000],['Sled pull',50],['Corrida',1000],['Burpee broad jump',80],['Corrida',1000],['Remo',1000],['Corrida',1000],['Farmers carry',200],['Corrida',1000],['Sandbag lunges',100],['Corrida',1000],['Wall balls (reps)',100]];
 const EX_SUG=['Supino reto','Supino inclinado','Crucifixo','Agachamento livre','Leg press','Cadeira extensora','Mesa flexora','Levantamento terra','Stiff','Afundo','Panturrilha','Remada curvada','Remada baixa','Puxada frontal','Barra fixa','Desenvolvimento','Elevação lateral','Rosca direta','Rosca martelo','Tríceps corda','Tríceps testa','Abdominal','Prancha','Wall sit','Spanish squat','Step-down','Ponte de glúteo','Abdução com elástico',...new Set(HYROX.map(h=>h[0])),'Bike','Air bike','Kettlebell swing','Thruster'];
-const MED=[['peso','Peso','kg',1],['gordura','% gordura','%',1],['magra','Massa magra','kg',1],['cintura','Cintura','cm',1],['abdomen','Abdômen','cm',1],['quadril','Quadril','cm',1],['peito','Peito','cm',1],['braco','Braço','cm',1],['coxa','Coxa','cm',1]];
+const MED=[['peso','Peso','kg',1],['gordura','% gordura','%',1],['magra','Massa magra','kg',1],['cintura','Cintura','cm',1],['abdomen','Abdômen','cm',1],['quadril','Quadril','cm',1],['pescoco','Pescoço','cm',1],['peito','Peito','cm',1],['braco','Braço','cm',1],['coxa','Coxa','cm',1]];
 
 let db=null,sample=null,dia=hojeISO(),cfg=structuredClone(DEF_CFG),perfis=[],subsPerfil=[];
 let perfil='andrew';try{perfil=localStorage.getItem('perfil')||'andrew'}catch{}
@@ -1355,7 +1363,7 @@ $('#impPrev').addEventListener('click',e=>{const b=e.target.closest('button');if
 
 /* ================= CORPO ================= */
 $('#mMet').innerHTML=MED.map(([k,n,u])=>`<option value="${k}">${n} (${u})</option>`).join('');
-function renderCorpo(){renderFotosCorpo();
+function renderCorpo(){renderFotosCorpo();bfPrep();
   const ord=[...medidas].sort((a,b)=>a.data.localeCompare(b.data));
   /* resumo: primeira, anterior e última para cada medida */
   const linhas=MED.map(([k,n,u])=>{const c=ord.filter(m=>num(m[k]));if(!c.length)return '';const pr=c[0],ul=c[c.length-1],an=c.length>1?c[c.length-2]:null;
@@ -1934,6 +1942,38 @@ $('#aj-conta').addEventListener('click',async e=>{const id=e.target.id,S=SOC();i
   }catch(err){toast('Não deu certo ('+(err.message||'erro')+')');const st=$('#ctSenhaSt');if(id==='ctSenhaOk'&&st)st.textContent='Não troquei: '+(err.message||'erro')}});
 function ligarSocial(){if(!SOC())return;document.querySelectorAll('.soc').forEach(x=>{if(x.id!=='trShare')x.hidden=false});$('#navFeed').hidden=false;$('#ajTabs [data-ajt="conta"]').hidden=false;
   SOC().meuPerfil().then(p=>{meuPf=p}).catch(()=>{});amigosAtualizar()}
+
+
+/* ================= % DE GORDURA — MÉTODO DA MARINHA DOS EUA ================= */
+const BF_PTS={f:[['pescoco','Pescoço','logo abaixo da laringe (pomo de adão)'],['cintura','Cintura','na cintura natural, onde é mais fina'],['quadril','Quadril','na parte mais saliente do bumbum']],
+  m:[['pescoco','Pescoço','logo abaixo da laringe (pomo de adão)'],['cintura','Abdômen','na altura do umbigo']]};
+let bfSexoAnt=null;
+function bfPrep(){const d=window.contaDados||{},c=cfg.calc||{};if(!bfSexoAnt){$('#bfSexo').value=d.sexo||c.sexo||'f';if(!$('#bfAlt').value)$('#bfAlt').value=d.altura||c.altura||''}
+  const sx=$('#bfSexo').value;if(sx===bfSexoAnt)return;bfSexoAnt=sx;
+  $('#bfCampos').innerHTML=BF_PTS[sx].map(([k,n,ond])=>`<div><b style="font-size:15px">${n}</b> <span class="note">— ${ond}</span><div class="grid3" style="margin-top:4px">${[1,2,3].map(j=>`<input data-bf="${k}" type="number" inputmode="decimal" step="0.1" placeholder="${j}ª medida (cm)" aria-label="${n}, ${j}ª medida">`).join('')}</div></div>`).join('');bfCalc()}
+const bfMedia=k=>{const v=[...document.querySelectorAll(`[data-bf="${k}"]`)].map(i=>num(i.value)).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0};
+const BF_FAIXA={m:[[6,'essencial'],[14,'atleta'],[18,'boa forma'],[25,'média'],[99,'acima do recomendado']],f:[[14,'essencial'],[21,'atleta'],[25,'boa forma'],[32,'média'],[99,'acima do recomendado']]};
+let bfRes=null;
+function bfCalc(){const sx=$('#bfSexo').value,h=num($('#bfAlt').value);
+  /* arredondamento do protocolo: pescoço para cima e cintura para baixo, em passos de 0,5 cm */
+  const pes=Math.ceil(bfMedia('pescoco')*2)/2,cin=Math.floor(bfMedia('cintura')*2)/2,qua=Math.round(bfMedia('quadril')*2)/2;
+  if(!h||!pes||!cin||(sx==='f'&&!qua)){bfRes=null;$('#bfRes').innerHTML='<p class="note">Preencha a altura e pelo menos uma medida de cada ponto.</p>';return}
+  /* a equação original é em polegadas: converto cm → pol (÷ 2,54) */
+  const pol=x=>x/2.54,base=sx==='f'?pol(cin)+pol(qua)-pol(pes):pol(cin)-pol(pes);
+  if(base<=0){$('#bfRes').innerHTML='<p class="note">Confira as medidas: o pescoço não pode ser maior que a cintura.</p>';bfRes=null;return}
+  const bf=sx==='f'?163.205*Math.log10(base)-97.684*Math.log10(pol(h))-78.387:86.010*Math.log10(base)-70.041*Math.log10(pol(h))+36.76;
+  const ult=medidas.find(m=>num(m.peso)),peso=ult?num(ult.peso):0,faixa=BF_FAIXA[sx].find(([lim])=>bf<lim)[1];
+  bfRes={sx,bf:+bf.toFixed(1),pes,cin,qua,peso};
+  $('#bfRes').innerHTML=`<div class="rot kres"><div class="t"><span>Gordura corporal</span><span>${esc(faixa)}</span></div><div class="big"><b>${fmt(bf,1)}%</b><span>de gordura</span></div>
+    <div class="row th"><span>Médias usadas</span><span>pescoço ${fmt(pes,1)} · ${sx==='m'?'abdômen':'cintura'} ${fmt(cin,1)}${sx==='f'?' · quadril '+fmt(qua,1):''} cm</span></div>
+    ${peso?`<div class="row"><span>Massa gorda</span><span>${fmt(peso*bf/100,1)} kg</span></div><div class="row"><span>Massa magra</span><span>${fmt(peso*(1-bf/100),1)} kg</span></div><p class="note">Com o último peso registrado (${fmt(peso,1)} kg, ${dBR(ult.data)}).</p>`:'<p class="note">Registre o peso para ver massa gorda e magra em kg.</p>'}
+    <div class="btns"><button class="pri" id="bfSalvar">Salvar nas medidas de hoje</button></div></div>`}
+$('#bfCard').addEventListener('input',e=>{if(e.target.id==='bfSexo')return;bfCalc()});
+$('#bfCard').addEventListener('change',e=>{if(e.target.id==='bfSexo')bfPrep()});
+$('#bfCard').addEventListener('click',e=>{if(e.target.id!=='bfSalvar'||!bfRes)return;const r=bfRes,dt=hojeISO(),ex=medidas.find(x=>x.data===dt&&x.fonte!=='nutri');
+  const m={...(ex||{}),data:dt,fonte:ex?ex.fonte||'manual':'manual',gordura:r.bf,pescoco:r.pes};if(r.sx==='m')m.abdomen=r.cin;else{m.cintura=r.cin;m.quadril=r.qua}
+  if(r.peso&&!num(m.magra))m.magra=+(r.peso*(1-r.bf/100)).toFixed(1);m.obs=[m.obs,'% gordura pela fita (Marinha EUA)'].filter(Boolean).join(' · ');
+  const id=ex?ex.id:'m-'+dt+'-manual';const {id:_i,...body}=m;gravar(P('medidas/'+id),body);toast('Salvo nas medidas de '+dBR(dt))});
 
 /* ================= versão independente (fora do Claude) ================= */
 if(window.STANDALONE){
