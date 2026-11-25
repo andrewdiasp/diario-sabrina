@@ -1054,7 +1054,8 @@ function renderGPend(){
   const refs=new Set(treinos.map(t=>t.garmin_ref).filter(Boolean)),lim=addDias(hojeISO(),-14);
   const l=garminHist.filter(g=>g.data>=lim).flatMap(g=>(g.treinos||[]).map((x,i)=>({d:g.data,i,x,k:gKey(g.data,x,i)}))).filter(o=>!refs.has(o.k));
   $('#gPendCard').hidden=!l.length;
-  $('#gPend').innerHTML=l.map(o=>`<button class="pick" data-gdet="${o.d}|${o.i}"><span>${esc(o.x.nome||'Atividade')}</span><small>${dBR(o.d)}${o.x.duracao_min?' · '+fmt(o.x.duracao_min)+' min':''} · toque para detalhar</small><b>${o.x.kcal?fmt(o.x.kcal)+' kcal':''}</b></button>`).join('');
+  l.sort((a,b)=>(b.d+(b.x.hora||'')).localeCompare(a.d+(a.x.hora||'')));
+  $('#gPend').innerHTML=l.map(o=>{const tp=tipoGarmin(o.x);return `<button class="pick" data-gdet="${o.d}|${o.i}"><span>${esc(tp!=='Outro'?tp:(o.x.nome||'Atividade'))}${tp!=='Outro'&&o.x.nome&&o.x.nome!==tp?` <span class="mut" style="font-weight:400">(${esc(o.x.nome)} no Garmin)</span>`:''}</span><small>${dBR(o.d)}${o.x.hora?' às '+esc(o.x.hora):''}${o.x.duracao_min?' · '+fmt(o.x.duracao_min)+' min':''} · toque para detalhar</small><b>${o.x.kcal?fmt(o.x.kcal)+' kcal':''}</b></button>`}).join('');
 }
 
 /* ---------- eventos gerais ---------- */
